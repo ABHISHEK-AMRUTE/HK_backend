@@ -1,0 +1,89 @@
+html{
+   scroll-behavior: smooth;
+   height: 100%;
+   
+}
+body{
+    height: 100%;
+}
+
+/* //avatart sec */
+.profile-sec {
+    margin-top: 50px;
+    
+}
+#avatar{
+    width: 100%;
+    height: auto;
+}
+
+
+/* chat section */
+
+.chat-sec {
+    margin-top: 50px;
+    padding: 20px !important;
+}
+#chat{
+    width: 60%;
+    height: auto;
+   
+}
+
+/* group chat section */
+
+.grp-chat-sec {
+   padding: 20px !important;
+  
+}
+#grp-chat{
+    width: 60%;
+    height: auto;
+   
+}
+.w3-sidebar{
+   width:5%;
+   max-width: 100px;
+   min-width: 90px ;
+   background-color: #232425;
+   
+}
+.w3-bar-item:hover{
+    background-color: #2A2A2C !important;
+    color: white !important;
+}
+.w3-row{
+       height: 100%;
+       margin-left: 5% !important;
+    
+}
+.w3-col{
+    height: 100%;
+}
+#navigation-light{
+    background-color: blue;
+    color: green;
+    width: 50%;
+}
+
+/* Scroll Bar */
+/* width */
+::-webkit-scrollbar {
+    width: 3px;
+  }
+  
+  /* Track */
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+  }
+   
+  /* Handle */
+  ::-webkit-scrollbar-thumb {
+    background: green; 
+  }
+  
+  /* Handle on hover */
+  ::-webkit-scrollbar-thumb:hover {
+    background: blue; 
+   
+  }
