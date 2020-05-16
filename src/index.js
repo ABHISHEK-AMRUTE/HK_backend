@@ -10,6 +10,14 @@ const { addUser, removeUser, getUser, getUsersInRoom } = require('./utils/users'
 require('./db/mongo')
 const chat_messages = require('./model/chat')
 const Reg_User = require('./model/Reg_User')
+
+
+////////Final models//////////
+const user  = require('./model/chat')
+const contact = require('./model/contact')
+const community = require('./model/community') 
+
+
 const app = express()
 
 app.use(bodyParser.urlencoded({ extended: false }))
@@ -26,6 +34,8 @@ app.use(express.static(publicDirectoryPath))
 io.on('connection', (socket) => {
 
     console.log('New WebSocket connection') 
+
+
     socket.on('join', (options, callback) => {
         const { error, user } = addUser({ id: socket.id, ...options })
 
@@ -96,9 +106,7 @@ io.on('connection', (socket) => {
 
 
 app.post('/registeruser',(req,res)=>{
- 
-
-    const obj = new Reg_User(req.body)
+    const obj = new user(req.body)
     console.log(req.Reg_User)
     obj.save().then(()=>{
         res.send(obj)
@@ -115,6 +123,34 @@ app.get('/get_users',(req,res)=>{
 })
 
 
+
+
+//////GET request to find contact list of user by his userid (user handel)///////
+app.get('./get_contact/',(req,res)=>{
+    user.find({userid:req.query.userid}).exec(function(err,docs){
+        if(err){
+            res.send({error:'unable to find user'})
+        }
+        else{
+            res.send(docs.contacts)
+        }
+    })
+})
+
+//////GET request to find community list of user by his userid (user handel)///////
+app.get('./get_contact/',(req,res)=>{
+    user.find({userid:req.query.userid}).exec(function(err,docs){
+        if(err){
+            res.send({error:'unable to find user'})
+        }
+        else{
+            res.send(docs.community)
+        }
+    })
+})
+
+
+
 server.listen(port, () => {
     console.log(`Server is up on port ${port}!`)
 })
@@ -124,5 +160,5 @@ server.listen(port, () => {
 
 
 
-
+// 
 // /home/abhishek/mongodb/bin/mongod --dbpath=/home/abhishek/mongodb-data
