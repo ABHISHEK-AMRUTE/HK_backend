@@ -61,3 +61,22 @@ const userschema = new mongoose.Schema({
 
 const user = mongoose.model('user',userschema)
 module.exports= user
+
+
+
+
+// {
+    // "userid":"hello123",
+    // "name":"ABhishek amrute",
+    // "createdAt":"123655",
+    // "account_type":"patient",
+    // "contacts":[{"chat_id":"1232146123",
+    //                "name":"i dont know"}],
+    // "community":[{"chat_id":"123123",
+    // "name":"i dont know"}],
+    // "request":[{
+    //     "chat_id":"56401448616",
+    //     "status":"done",
+    //     "name":"don"
+    // }]
+// }
