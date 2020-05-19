@@ -118,7 +118,26 @@ app.post('/registeruser',(req,res)=>{
           else{
             const obj = new user(req.body)
             obj.save().then(()=>{
+               if(obj.account_type==="doctor"){
+                    const comm = new community({
+                        name:obj.name,
+                        owner:obj._id,
+                        request:[],
+                        member:[],
+                        message:[]
+                    })
+
+                comm.save().then((object)=>{
+                    const new_obj = {community : object,
+                     user:obj}
+                     res.send(new_obj)
+                }).catch(()=>{
+                    res.send({error:"not created"})
+                })
+               }
+               else{
                 res.send(obj)
+               }
             }).catch((e)=>{
                 res.send({error : e})
             }) 
@@ -183,12 +202,29 @@ app.get('/get_contact',(req,res)=>{
 })
 
 
+app.get('/get_users',(req,res)=>{
+    user.find().exec(function(err,docs){
+        if(err){
+            res.send({error:'unable to find user'})
+        }
+        else{
+            res.send(docs)
+        }
+    })
+})
+
 ///adding user to the list "conatcts of users"
 /// query parameters
 /// member_one : name
 /// member_two : name
 //  member_one_id  :id
 //  member_two_id : id
+// ABhishek amrute
+// ABhishek amrute
+// 5ec20bb9230ff738facc7ce6
+// 5ec20e93152c15449c0de67a
+
+// localhost:3000/add_contact?member_one=ABhishek amrute&member_two=ABhishek amrute&member_one_id=5ec20bb9230ff738facc7ce6&member_two_id=5ec20e93152c15449c0de67a
 app.post('/add_contact',(req,res)=>{
     
     //creating contact object
@@ -291,7 +327,7 @@ app.post('/save_contacts_chat',(req,res)=>{
 // text:req.query.text,
 // timestamp:req.query.timestamp
 
-app.post('/save_contacts_chat',(req,res)=>{
+app.post('/save_community_chat',(req,res)=>{
     community.find({_id:req.query._id}).exec(function(err,result){
         if(result.length==0)
         {
@@ -317,10 +353,7 @@ app.post('/save_contacts_chat',(req,res)=>{
 
 
 
-//creating community
-app.post('/create_community',(req,res)=>{
 
-})
 
 
 

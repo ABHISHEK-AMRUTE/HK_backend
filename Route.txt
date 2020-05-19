@@ -1,0 +1,107 @@
+Assume URL = "localhost:3000" || "url of server on which project will be deployed"
+
+
+
+
+
+GET request :- for registering user (only for dev, as we are assuming users are already created)
+URL = "URL/registeruser"
+Return Type: User object created
+parameter body: - 
+ {
+     "userid":"sample_unique_id",
+     "name":"ABhishek amrute",
+     "createdAt":"123655",
+     "account_type":"patient",
+     "contacts":[{"chat_id":"1232146123",
+                    "name":"Sample"}],
+     "community":[{"chat_id":"123123",
+     "name":"sample"}],
+     "request":[{
+         "chat_id":"56401448616",
+         "status":"done",
+         "name":"sample"
+     }]
+ }
+
+
+
+ 
+
+>>>>Getting user info of current user by its userid.
+GET request url = "URL/my_info"
+query parameter: {
+    userid : "samplea12" 
+}
+Return Type: User object
+
+
+
+
+
+
+>>>>Getting Contact list of the current user 
+GET request url = "URL/get_contact"
+query parameter: {
+    userid : "samplea12" 
+}
+Return Type: array of objects having information of contacts(one-to-one chat ) of a user.
+
+
+
+
+>>>>Getting community list of the current user 
+GET request url = "URL/get_contact"
+query parameter: {
+    userid : "samplea12" 
+}
+Return Type: array of objects having information of contacts(one-to-one chat ) of a user.
+
+
+
+
+
+
+
+
+///adding user to the list "conatcts of users"
+POST request to add new contact to the list of two users.
+url = "URL/add_contact"
+Query parameters:
+{
+  member_one : name
+  member_two : name
+  member_one_id  :id
+  member_two_id : id
+}
+return:
+ success or faliure message
+
+
+
+
+POST request url = "URL/save_contacts_chat"
+///saving contact(one-to-one chat messages)
+/// query parameters
+// _id : chat_id
+// name:req.query.name,
+// text:req.query.text,
+// timestamp:req.query.timestamp
+
+
+
+
+POST request url = "URL/save_community_chat"
+///saving community chat messages
+/// query parameters
+// _id : chat_id
+// name:req.query.name,
+// text:req.query.text,
+// timestamp:req.query.timestamp
+
+
+
+
+
+
+
