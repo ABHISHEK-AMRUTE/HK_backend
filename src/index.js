@@ -167,9 +167,9 @@ app.post('/registeruser/c',(req,res)=>{
 
 ////getting user info 
 app.get('/my_info',(req,res)=>{
-    Reg_User.find({userid:req.query.userid}).exec(function(err, docs) { 
+    user.find({userid:req.query.userid}).exec(function(err, docs) { 
          
-        res.send(docs)
+        res.send(docs[0])
    });
 })
 
@@ -278,7 +278,7 @@ app.post('/add_contact',(req,res)=>{
                
             
          })
-         res.send()
+         res.send({success:"success! in adding user to contact"})
     }).catch((err)=>{
         res.send({error:err})
     })
