@@ -173,8 +173,10 @@ app.get('/my_info',(req,res)=>{
    });
 })
 
-
-
+////updating user profile (editable)
+app.get('/edit_my_info',(req,res)=>{
+    
+})
 
 //////GET request to find contact list of user by his userid (user handel)///////
 app.get('./get_contact',(req,res)=>{
@@ -203,7 +205,7 @@ app.get('/get_contact',(req,res)=>{
 
 
 app.get('/get_users',(req,res)=>{
-    user.find().exec(function(err,docs){
+    user.find(req.body).exec(function(err,docs){
         if(err){
             res.send({error:'unable to find user'})
         }
