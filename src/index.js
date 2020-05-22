@@ -1,5 +1,5 @@
 const path = require('path')
-
+const multer = require('multer')
 const http = require('http')
 const express = require('express')
 const socketio = require('socket.io')
@@ -18,7 +18,21 @@ const user  = require('./model/user')
 const contact = require('./model/contact')
 const community = require('./model/community') 
 
+///////////Multer middleware/////////
+const upload = multer({
+   
+    limits:{
+        fileSize : 5000000
 
+    },
+    fileFilter(req,file,cb)
+    {   
+        if(!file.originalname.match(/\.(jpg|jpeg|png)$/)){
+            return cb(new Error('Please upload an image'))
+        }
+        cb(undefined,true)
+    }
+})
 const app = express()
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
@@ -35,6 +49,8 @@ const port = process.env.PORT || 3000
 const publicDirectoryPath = path.join(__dirname, '../public')
 
 app.use(express.static(publicDirectoryPath))
+
+
 
 io.on('connection', (socket) => {
 
@@ -112,9 +128,17 @@ io.on('connection', (socket) => {
 
 //////////////routes//////////////////
 
+/////avatar testing//////
+
+app.post('/avatar',upload.single('avatar'),(req,res)=>{
+    res.send()
+},(error,req,res,next)=>{
+    res.send({error:error.message})
+})
+
 /////////creating user/////////////
 
-app.post('/registeruser',(req,res)=>{
+app.post('/registeruser',upload.single('avatar'),(req,res)=>{
    
    user.find({userid:req.body.userid}).exec(function(err,docs){
           if(docs.length!=0){
@@ -122,6 +146,10 @@ app.post('/registeruser',(req,res)=>{
           }
           else{
             const obj = new user(req.body)
+            obj.avatar = req.file.buffer;
+            obj.contacts = []
+            obj.community = []
+            obj.request = []
             obj.save().then(()=>{
                if(obj.account_type==="doctor"){
                     const comm = new community({
@@ -149,6 +177,8 @@ app.post('/registeruser',(req,res)=>{
           }
    });
   
+},(error,req,res,next)=>{
+    res.send({error:error.message})
 })
 
 
@@ -173,8 +203,14 @@ app.post('/registeruser/c',(req,res)=>{
 ////getting user info 
 app.get('/my_info',(req,res)=>{
     user.find({userid:req.query.userid}).exec(function(err, docs) { 
-         
-        res.send(docs[0])
+       if(docs.length!=0)
+       {
+        let buff = new Buffer(docs[0].avatar);
+        let base64data = buff.toString('base64');
+       res.send(base64data)
+       }
+
+       res.send({error:"no user found"})
    });
 })
 

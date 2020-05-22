@@ -5,6 +5,22 @@ const userschema = new mongoose.Schema({
        type:String,
        required:true
     },
+    phone:{
+        type:Number,
+        default:0
+    },
+    email:{
+      type:String,
+      required:true
+     },
+     description:{
+        type:String,
+        default:"Available"
+     },
+    avatar:{
+        type:Buffer,
+        required:true
+    },
     name:{
         type:String,
         required:true,
@@ -66,17 +82,17 @@ module.exports= user
 
 
 // {
-    // "userid":"hello123",
-    // "name":"ABhishek amrute",
-    // "createdAt":"123655",
-    // "account_type":"patient",
-    // "contacts":[{"chat_id":"1232146123",
-    //                "name":"i dont know"}],
-    // "community":[{"chat_id":"123123",
-    // "name":"i dont know"}],
-    // "request":[{
-    //     "chat_id":"56401448616",
-    //     "status":"done",
-    //     "name":"don"
-    // }]
+//     "userid":"hello123",
+//     "name":"ABhishek amrute",
+//     "createdAt":"123655",
+//     "account_type":"patient",
+//     "contacts":[{"chat_id":"1232146123",
+//                    "name":"i dont know"}],
+//     "community":[{"chat_id":"123123",
+//     "name":"i dont know"}],
+//     "request":[{
+//         "chat_id":"56401448616",
+//         "status":"done",
+//         "name":"don"
+//     }]
 // }
