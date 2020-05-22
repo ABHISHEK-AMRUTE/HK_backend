@@ -1,5 +1,5 @@
 const path = require('path')
-var cors = require('cors');
+
 const http = require('http')
 const express = require('express')
 const socketio = require('socket.io')
@@ -10,7 +10,7 @@ const { addUser, removeUser, getUser, getUsersInRoom } = require('./utils/users'
 
 require('./db/mongo')
 const chat_messages = require('./model/chat')
-const Reg_User = require('./model/Reg_User')
+
 
 
 ////////Final models//////////
@@ -20,7 +20,11 @@ const community = require('./model/community')
 
 
 const app = express()
-app.use(cors())
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
+  });
 app.use(bodyParser.urlencoded({ extended: false }))
 
 app.use(bodyParser.json())
