@@ -1,5 +1,5 @@
 function tests()
-{ console.log('in child.js')
+{   console.log('in child.js')
     parent.printt();
 }
 const socket = io()
@@ -128,7 +128,7 @@ $sendLocationButton.addEventListener('click', () => {
     })
 })
 
-socket.emit('join', { username, room }, (error) => {
+socket.emit('join', "one-to-one", { username, room }, (error) => {
     if (error) {
         alert(error)
         location.href = '/'

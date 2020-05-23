@@ -52,23 +52,47 @@ app.use(express.static(publicDirectoryPath))
 
 
 
+
+
+
 io.on('connection', (socket) => {
 
     console.log('New WebSocket connection') 
 
 
-    socket.on('join', (options, callback) => {
+    socket.on('join', (type,options, callback) => {
+
         const { error, user } = addUser({ id: socket.id, ...options })
+        
 
         if (error) {
             return callback(error)
         }
         
-        chat_messages.find({room:user.room}).sort({createdAt:1}).exec(function(err, docs) { 
-             docs.forEach(element => {
-                socket.emit('message', generateMessage(element.name, element.chat_message)) 
-             });
-        });
+
+       /////loading chat//////
+       if(type=="one-to-one"){
+
+        contact.findOne({_id:user.room}).exec(function(err,result){
+            if(err)
+            {
+                io.to(user.room).emit({
+                    text : "Chats not found",
+                    name : null_,
+                    timestamp : Date.now()
+                } )
+            }
+             
+            result.message.forEach(element => {
+                io.to(user.room).emit({
+                    text : element.text,
+                    name : element.name,
+                    timestamp : element.timestamp
+                } )
+            });
+
+          }) 
+       }
 
         socket.join(user.room)
 
@@ -81,30 +105,43 @@ io.on('connection', (socket) => {
 
         callback()
     })
-
+    
+    
     socket.on('sendMessage', (message, callback) => {
         const user = getUser(socket.id)
         const filter = new Filter()
 
-        if (filter.isProfane(message)) {
+        if (filter.isProfane(message.text)) {
             return callback('Profanity is not allowed!')
         }
-          ///saving to database
-          const mes_obj = generateMessage(user.username, message)
-          const obj = new chat_messages({
-            chat_message:mes_obj.text,
-              name:mes_obj.username,
-              createdAt:mes_obj.createdAt,
-              room:user.room
-          })
-          obj.save().then(()=>{
-                    console.log('saved to db')
-                }).catch(()=>{
-                    res.send('error to write data')
-                })
-        io.to(user.room).emit('message',mes_obj )
+        ///saving to database
+         
+        contact.findOne({_id:user.room}).exec(function(err,result){
+            if(err)
+            {
+                io.to(user.room).emit({
+                    text : "Error in Storing! Check Internet Connection",
+                    name : null_,
+                    timestamp : Date.now()
+                } )
+            }
+             
+           result.message.push(message)
+           result.save().catch(()=>{
+            io.to(user.room).emit({
+                text : "Error in Storing! Check Internet Connection",
+                name : null_,
+                timestamp : Date.now()
+            } )
+           })
+
+
+          }) 
+          
+        io.to(user.room).emit(message)
         callback()
     })
+    
 
     socket.on('sendLocation', (coords, callback) => {
         const user = getUser(socket.id)
@@ -126,7 +163,44 @@ io.on('connection', (socket) => {
 })
 
 
+
+
+
+
 //////////////routes//////////////////
+
+//////////one-to-one stuff////////////
+
+app.post('/load_chat',(req,res)=>{
+      contact.findOne({_id:req.query._id}).exec(function(err,result){
+             if(err)
+             {
+                 res.send({error:"not record of chats found"})
+             }
+             res.send(result)
+      }) 
+})
+
+app.post('/push_message',(req,res)=>{
+    contact.findOne({_id:req.query._id}).exec(function(err,result){
+           if(err)
+           {
+               res.send({error:"not record of chats found"})
+           }
+           result.message.push({
+               name:req.query.name,
+               text:req.query.text,
+               timestamp:req.query.timestamp
+           })
+           result.save().then(()=>{
+               res.send(result)
+           }).catch(()=>{
+            res.send({error:"Error in saving chat! try again"})
+           })
+    }) 
+})
+
+/////////////////////////////////////
 
 /////avatar testing//////
 
