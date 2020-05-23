@@ -11,6 +11,16 @@ const userschema = new mongoose.Schema({
         trim:true,
         required:true
     },
+    member_one_id:{
+        type:mongoose.Schema.Types.ObjectId,
+        trim:true,
+        required:true
+      },
+      member_two_id:{
+          type:mongoose.Schema.Types.ObjectId,
+          trim:true,
+          required:true
+      },
     message:[{
           name:{
               type:String,

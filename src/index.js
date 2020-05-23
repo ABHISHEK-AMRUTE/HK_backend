@@ -348,6 +348,8 @@ app.post('/add_contact',(req,res)=>{
     const obj =  new contact({
         member_one:req.query.member_one,
         member_two:req.query.member_two,
+        member_one_id:req.query.member_one_id,
+        member_two_id:req.query.member_two_id,
         message:{
             name:"Note",
             text:"Chat initiated",
