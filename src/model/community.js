@@ -15,12 +15,12 @@ const userschema = new mongoose.Schema({
         required:true
     },
     name:{
-        type:Boolean,
+        type:String,
         require:true,
         trim:true
     },
     status:{
-        type:Boolean,
+        type:String,
         require:true
     }
     }],

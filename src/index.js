@@ -14,31 +14,30 @@ const chat_messages = require('./model/chat')
 
 
 ////////Final models//////////
-const user  = require('./model/user')
+const user = require('./model/user')
 const contact = require('./model/contact')
-const community = require('./model/community') 
+const community = require('./model/community')
 
 ///////////Multer middleware/////////
 const upload = multer({
-   
-    limits:{
-        fileSize : 5000000
+
+    limits: {
+        fileSize: 5000000
 
     },
-    fileFilter(req,file,cb)
-    {   
-        if(!file.originalname.match(/\.(jpg|jpeg|png)$/)){
+    fileFilter(req, file, cb) {
+        if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
             return cb(new Error('Please upload an image'))
         }
-        cb(undefined,true)
+        cb(undefined, true)
     }
 })
 const app = express()
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
-  });
+});
 app.use(bodyParser.urlencoded({ extended: false }))
 
 app.use(bodyParser.json())
@@ -57,42 +56,43 @@ app.use(express.static(publicDirectoryPath))
 
 io.on('connection', (socket) => {
 
-    console.log('New WebSocket connection') 
+    console.log('New WebSocket connection')
 
 
-    socket.on('join', (type,options, callback) => {
+    socket.on('join', (type, options, callback) => {
 
         const { error, user } = addUser({ id: socket.id, ...options })
-        
+
 
         if (error) {
             return callback(error)
         }
-        
 
-       /////loading chat//////
-       if(type=="one-to-one"){
 
-        contact.findOne({_id:user.room}).exec(function(err,result){
-            if(err)
-            {
-                io.to(user.room).emit({
-                    text : "Chats not found",
-                    name : null_,
-                    timestamp : Date.now()
-                } )
-            }
-             
-            result.message.forEach(element => {
-                io.to(user.room).emit({
-                    text : element.text,
-                    name : element.name,
-                    timestamp : element.timestamp
-                } )
-            });
+        /////loading chat//////
+        if (type == "one-to-one") {
 
-          }) 
-       }
+            contact.findOne({ _id: user.room }).exec(function (err, result) {
+                if (err) {
+                    io.to(user.room).emit({
+                        text: "Chats not found",
+                        name: null_,
+                        timestamp: Date.now()
+                    })
+                }
+
+                result.message.forEach(element => {
+                    io.to(user.room).emit({
+                        text: element.text,
+                        name: element.name,
+                        timestamp: element.timestamp
+                    })
+                });
+
+            })
+        } else {
+
+        }
 
         socket.join(user.room)
 
@@ -105,8 +105,8 @@ io.on('connection', (socket) => {
 
         callback()
     })
-    
-    
+
+
     socket.on('sendMessage', (message, callback) => {
         const user = getUser(socket.id)
         const filter = new Filter()
@@ -115,33 +115,32 @@ io.on('connection', (socket) => {
             return callback('Profanity is not allowed!')
         }
         ///saving to database
-         
-        contact.findOne({_id:user.room}).exec(function(err,result){
-            if(err)
-            {
+
+        contact.findOne({ _id: user.room }).exec(function (err, result) {
+            if (err) {
                 io.to(user.room).emit({
-                    text : "Error in Storing! Check Internet Connection",
-                    name : null_,
-                    timestamp : Date.now()
-                } )
+                    text: "Error in Storing! Check Internet Connection",
+                    name: null_,
+                    timestamp: Date.now()
+                })
             }
-             
-           result.message.push(message)
-           result.save().catch(()=>{
-            io.to(user.room).emit({
-                text : "Error in Storing! Check Internet Connection",
-                name : null_,
-                timestamp : Date.now()
-            } )
-           })
+
+            result.message.push(message)
+            result.save().catch(() => {
+                io.to(user.room).emit({
+                    text: "Error in Storing! Check Internet Connection",
+                    name: null_,
+                    timestamp: Date.now()
+                })
+            })
 
 
-          }) 
-          
+        })
+
         io.to(user.room).emit(message)
         callback()
     })
-    
+
 
     socket.on('sendLocation', (coords, callback) => {
         const user = getUser(socket.id)
@@ -171,135 +170,142 @@ io.on('connection', (socket) => {
 
 //////////one-to-one stuff////////////
 
-app.post('/load_chat',(req,res)=>{
-      contact.findOne({_id:req.query._id}).exec(function(err,result){
-             if(err)
-             {
-                 res.send({error:"not record of chats found"})
-             }
-             res.send(result)
-      }) 
+app.post('/load_chat', (req, res) => {
+    contact.findOne({ _id: req.query._id }).exec(function (err, result) {
+        if (err) {
+            res.send({ error: "not record of chats found" })
+        }
+        res.send(result)
+    })
 })
 
-app.post('/push_message',(req,res)=>{
-    contact.findOne({_id:req.query._id}).exec(function(err,result){
-           if(err)
-           {
-               res.send({error:"not record of chats found"})
-           }
-           result.message.push({
-               name:req.query.name,
-               text:req.query.text,
-               timestamp:req.query.timestamp
-           })
-           result.save().then(()=>{
-               res.send(result)
-           }).catch(()=>{
-            res.send({error:"Error in saving chat! try again"})
-           })
-    }) 
+app.post('/push_message', (req, res) => {
+    contact.findOne({ _id: req.query._id }).exec(function (err, result) {
+        if (err) {
+            res.send({ error: "not record of chats found" })
+        }
+        result.message.push({
+            name: req.query.name,
+            text: req.query.text,
+            timestamp: req.query.timestamp
+        })
+        result.save().then(() => {
+            res.send(result)
+        }).catch(() => {
+            res.send({ error: "Error in saving chat! try again" })
+        })
+    })
 })
 
 /////////////////////////////////////
 
 /////avatar testing//////
 
-app.post('/avatar',upload.single('avatar'),(req,res)=>{
+app.post('/avatar', upload.single('avatar'), (req, res) => {
     res.send()
-},(error,req,res,next)=>{
-    res.send({error:error.message})
+}, (error, req, res, next) => {
+    res.send({ error: error.message })
 })
 
 /////////creating user/////////////
 
-app.post('/registeruser',upload.single('avatar'),(req,res)=>{
-   
-   user.find({userid:req.body.userid}).exec(function(err,docs){
-          if(docs.length!=0){
-                res.send({error:"User id already taken! try something unique."})
-          }
-          else{
+app.post('/registeruser', upload.single('avatar'), (req, res) => {
+
+    user.find({ userid: req.body.userid }).exec(function (err, docs) {
+        if (docs.length != 0) {
+            res.send({ error: "User id already taken! try something unique." })
+        }
+        else {
             const obj = new user(req.body)
             obj.avatar = req.file.buffer;
             obj.contacts = []
             obj.community = []
             obj.request = []
-            obj.save().then(()=>{
-               if(obj.account_type==="doctor"){
+            obj.save().then(() => {
+                if (obj.account_type === "doctor") {
                     const comm = new community({
-                        name:obj.name,
-                        owner:obj._id,
-                        request:[],
-                        member:[],
-                        message:[]
+                        name: obj.name + " community",
+                        owner: obj._id,
+                        request: [],
+                        member: [{
+                            chat_id: obj._id,
+                            name: obj.name
+                        }],
+                        message: []
                     })
 
-                comm.save().then((object)=>{
-                    const new_obj = {community : object,
-                     user:obj}
-                     res.send(new_obj)
-                }).catch(()=>{
-                    res.send({error:"not created"})
-                })
-               }
-               else{
-                res.send(obj)
-               }
-            }).catch((e)=>{
-                res.send({error : e})
-            }) 
-          }
-   });
-  
-},(error,req,res,next)=>{
-    res.send({error:error.message})
+                    comm.save().then((object) => {
+                        const new_obj = {
+                            community: object,
+                            user: obj
+                        }
+                        obj.community.push({
+                            chat_id: object._id,
+                            name: obj.name + " community"
+                        })
+                        obj.save()
+                        res.send(new_obj)
+                    }).catch(() => {
+                        res.send({ error: "not created" })
+                    })
+                }
+                else {
+                    res.send(obj)
+                }
+            }).catch((e) => {
+                res.send({ error: e })
+            })
+        }
+    });
+
+}, (error, req, res, next) => {
+    res.send({ error: error.message })
 })
 
 
-app.post('/registeruser/c',(req,res)=>{
-    user.find({userid:req.query.userid}).exec(function(err,docs){
-          
-             const obj = docs[0];
-             obj.contacts.push({chat_id:"asdasfsdfd54",name:"abhishek"})
+app.post('/registeruser/c', (req, res) => {
+    user.find({ userid: req.query.userid }).exec(function (err, docs) {
 
-             obj.save().then(()=>{
-                 res.send(obj)
-             }).catch((e)=>{
-                 res.send({error : e})
-             }) 
-           
+        const obj = docs[0];
+        obj.contacts.push({ chat_id: "asdasfsdfd54", name: "abhishek" })
+
+        obj.save().then(() => {
+            res.send(obj)
+        }).catch((e) => {
+            res.send({ error: e })
+        })
+
     });
-   
- })
- 
- 
+
+})
+
+
 
 ////getting user info 
-app.get('/my_info',(req,res)=>{
-    user.find({userid:req.query.userid}).exec(function(err, docs) { 
-       if(docs.length!=0)
-       {
-        let buff = new Buffer(docs[0].avatar);
-        let base64data = buff.toString('base64');
-       res.send(base64data)
-       }
+app.get('/my_info', (req, res) => {
+    user.find({ userid: req.query.userid }).exec(function (err, docs) {
+        if (docs.length != 0) {
+            let buff = new Buffer(docs[0].avatar);
+            let base64data = buff.toString('base64');
+            res.send(base64data)
+        }
 
-       res.send({error:"no user found"})
-   });
+        res.send({ error: "no user found" })
+    });
 })
 
 ////updating user profile (editable)
-app.get('/edit_my_info',(req,res)=>{
-    
+app.get('/edit_my_info', (req, res) => {
+
 })
 
 //////GET request to find contact list of user by his userid (user handel)///////
-app.get('./get_contact',(req,res)=>{
-    user.find({userid:req.query.userid}).exec(function(err,docs){
-        if(err){
-            res.send({error:'unable to find user'})
+app.get('./get_contact', (req, res) => {
+    user.find({ userid: req.query.userid }).exec(function (err, docs) {
+        if (err) {
+            res.send({ error: 'unable to find user' })
         }
-        else{
+        else {
             res.send(docs.contacts)
         }
     })
@@ -307,24 +313,24 @@ app.get('./get_contact',(req,res)=>{
 
 
 //////GET request to find community list of user by his userid (user handel)///////
-app.get('/get_contact',(req,res)=>{
-    user.find({userid:req.query.userid}).exec(function(err,docs){
-        if(err){
-            res.send({error:'unable to find user'})
+app.get('/get_contact', (req, res) => {
+    user.find({ userid: req.query.userid }).exec(function (err, docs) {
+        if (err) {
+            res.send({ error: 'unable to find user' })
         }
-        else{
+        else {
             res.send(docs.community)
         }
     })
 })
 
 
-app.get('/get_users',(req,res)=>{
-    user.find(req.body).exec(function(err,docs){
-        if(err){
-            res.send({error:'unable to find user'})
+app.get('/get_users', (req, res) => {
+    user.find(req.body).exec(function (err, docs) {
+        if (err) {
+            res.send({ error: 'unable to find user' })
         }
-        else{
+        else {
             res.send(docs)
         }
     })
@@ -342,67 +348,65 @@ app.get('/get_users',(req,res)=>{
 // 5ec20e93152c15449c0de67a
 
 // localhost:3000/add_contact?member_one=ABhishek amrute&member_two=ABhishek amrute&member_one_id=5ec20bb9230ff738facc7ce6&member_two_id=5ec20e93152c15449c0de67a
-app.post('/add_contact',(req,res)=>{
-    
+app.post('/add_contact', (req, res) => {
+
     //creating contact object
-    const obj =  new contact({
-        member_one:req.query.member_one,
-        member_two:req.query.member_two,
-        member_one_id:req.query.member_one_id,
-        member_two_id:req.query.member_two_id,
-        message:{
-            name:"Note",
-            text:"Chat initiated",
+    const obj = new contact({
+        member_one: req.query.member_one,
+        member_two: req.query.member_two,
+        member_one_id: req.query.member_one_id,
+        member_two_id: req.query.member_two_id,
+        message: {
+            name: "Note",
+            text: "Chat initiated",
             timestamp: Date.now()
         }
     })
 
 
     //saving contact object to get its _id
-    obj.save().then(()=>{
+    obj.save().then(() => {
 
-          const chat_id = obj._id  
-          //adding chat contact in member one object   
-          user.find({_id:req.query.member_one_id}).exec(function(err,result){
-             if(result.length==0)
-             {
-                  res.send({error:"Some error occured in first step"})
-             }
-             else{
-                  const user_one = result[0];
-                  user_one.contacts.push({
-                      chat_id,
-                      name:req.query.member_two
-                  });
-                  user_one.save()
-             }
-                
-             
-          })
+        const chat_id = obj._id
+        //adding chat contact in member one object   
+        user.find({ _id: req.query.member_one_id }).exec(function (err, result) {
+            if (result.length == 0) {
+                res.send({ error: "Some error occured in first step" })
+            }
+            else {
+                const user_one = result[0];
+                user_one.contacts.push({
+                    chat_id,
+                    name: req.query.member_two
+                });
+                user_one.save()
+            }
 
-          //adding chat contact in member two object   
-          user.find({_id:req.query.member_two_id}).exec(function(err,result){
-            if(result.length==0)
-            {
-                 res.send({error:"Some error occured in secnond step"})
+
+        })
+
+        //adding chat contact in member two object   
+        user.find({ _id: req.query.member_two_id }).exec(function (err, result) {
+            if (result.length == 0) {
+                res.send({ error: "Some error occured in secnond step" })
             }
-            else{
-                 const user_one = result[0];
-                 user_one.contacts.push({
-                     chat_id,
-                     name:req.query.member_one
-                 });
-                 user_one.save()
+            else {
+                const user_one = result[0];
+                user_one.contacts.push({
+                    chat_id,
+                    name: req.query.member_one
+                });
+                user_one.save()
             }
-               
-            
-         })
-         res.send({success:"success! in adding user to contact"})
-    }).catch((err)=>{
-        res.send({error:err})
+
+
+        })
+        res.send({ success: "success! in adding user to contact" })
+    }).catch((err) => {
+        res.send({ error: err })
     })
 
-  
+
 
 })
 
@@ -415,26 +419,25 @@ app.post('/add_contact',(req,res)=>{
 // text:req.query.text,
 // timestamp:req.query.timestamp
 
-app.post('/save_contacts_chat',(req,res)=>{
-    contact.find({_id:req.query._id}).exec(function(err,result){
-        if(result.length==0)
-        {
-            res.send({error:"contact not found"})
-        }else{
+app.post('/save_contacts_chat', (req, res) => {
+    contact.find({ _id: req.query._id }).exec(function (err, result) {
+        if (result.length == 0) {
+            res.send({ error: "contact not found" })
+        } else {
             const obj = result[0]
             obj.message.push({
-                name:req.query.name,
-                text:req.query.text,
-                timestamp:req.query.timestamp
+                name: req.query.name,
+                text: req.query.text,
+                timestamp: req.query.timestamp
             })
 
-            obj.save().then(()=>{
-                  res.send({success:"sent"})
-            }).catch(()=>{
-                  res.send({error:"error while storing chat"})
+            obj.save().then(() => {
+                res.send({ success: "sent" })
+            }).catch(() => {
+                res.send({ error: "error while storing chat" })
             })
         }
-       
+
     })
 })
 
@@ -446,33 +449,80 @@ app.post('/save_contacts_chat',(req,res)=>{
 // text:req.query.text,
 // timestamp:req.query.timestamp
 
-app.post('/save_community_chat',(req,res)=>{
-    community.find({_id:req.query._id}).exec(function(err,result){
-        if(result.length==0)
-        {
-            res.send({error:"contact not found"})
-        }else{
+app.post('/save_community_chat', (req, res) => {
+    community.find({ _id: req.query._id }).exec(function (err, result) {
+        if (result.length == 0) {
+            res.send({ error: "contact not found" })
+        } else {
             const obj = result[0]
             obj.message.push({
-                name:req.query.name,
-                text:req.query.text,
-                timestamp:req.query.timestamp
+                name: req.query.name,
+                text: req.query.text,
+                timestamp: req.query.timestamp
             })
 
-            obj.save().then(()=>{
-                  res.send({success:"sent"})
-            }).catch(()=>{
-                  res.send({error:"error while storing chat"})
+            obj.save().then(() => {
+                res.send({ success: "sent" })
+            }).catch(() => {
+                res.send({ error: "error while storing chat" })
             })
         }
-       
+
     })
 })
 
 
 
+/////////////send community request///////////
+////parameters 
+///   community_id 
+///   user_id
+///   user_name
+///   community_name
+
+app.post('/send_request', (req, res) => {
 
 
+    ////sending request to 
+    community.findOne({ _id: req.query.community_id }).exec((error, result) => {
+
+        result.request.push({
+            chat_id: req.query.user_id,
+            name: req.query.user_name,
+            status: "pending"
+        })
+        result.save().then(() => {
+
+            user.findOne({ _id: req.query.user_id }).exec((error, resul) => {
+                
+                if(error)
+                {
+                    res.send("from in")
+                }
+                resul.request.push({
+                    chat_id: req.query.user_id,
+                    name: req.query.community_name,
+                    status: "pending"
+                })
+              
+                resul.save().then(() => {
+                    res.send({ success: "Sucsess" })
+                }).catch(()=>{
+                    res.send("errd")
+                })
+            })
+
+
+        })
+
+    })
+
+    //res.send({ error: "Unable to send request" })
+
+})
+
+
+////////accepting request//////
 
 
 
