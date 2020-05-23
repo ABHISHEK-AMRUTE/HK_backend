@@ -283,16 +283,16 @@ app.post('/registeruser/c', (req, res) => {
 
 ////getting user info 
 app.get('/my_info', (req, res) => {
-    user.find({ userid: req.query.userid }).exec(function (err, docs) {
-        if (docs.length != 0) {
-            let buff = new Buffer(docs[0].avatar);
-            let base64data = buff.toString('base64');
-            res.send(base64data)
-        }
+    user.findOne({ userid: req.query.userid }).exec(function (err, docs) {
+          
 
-        res.send({ error: "no user found" })
+          if(err){
+            res.send({ error: "no user found" })
+          }
+          res.send(docs)
     });
 })
+
 
 ////updating user profile (editable)
 app.get('/edit_my_info', (req, res) => {
@@ -500,7 +500,7 @@ app.post('/send_request', (req, res) => {
                     res.send("from in")
                 }
                 resul.request.push({
-                    chat_id: req.query.user_id,
+                    chat_id: req.query.community_id,
                     name: req.query.community_name,
                     status: "pending"
                 })
@@ -517,13 +517,72 @@ app.post('/send_request', (req, res) => {
 
     })
 
-    //res.send({ error: "Unable to send request" })
+  
 
 })
 
 
 ////////accepting request//////
+// API Parameters
+///   community_id 
+///   user_id
+///   user_name
+///   community_name
+ app.post('/accept_request',(req,res)=>{
 
+     community.findOne({_id:req.query.community_id}).exec((error,result)=>{
+        if(error){
+            res.send({error:"Unexpected error occured"})
+        }
+
+         result.member.push({
+             chat_id:req.query.user_id,
+             name:req.query.user_name
+         })
+         
+         result.request.forEach(element => {
+              if(element.chat_id==req.query.user_id)
+              {   
+                  element.status = "accepted"
+                  
+              }
+         });
+
+         result.save().then(()=>{
+            
+            user.findOne({_id:req.query.user_id}).exec((error,resu)=>{
+                if(error){
+                    res.send({error:"Unexpected error occured"})
+                }
+
+                resu.community.push({
+                    chat_id:req.query.community_id,
+                    name : req.query.community_name
+                })
+
+                resu.request.forEach(element => {
+                    if(element.chat_id==req.query.community_id)
+                    {   
+                        element.status = "accepted"
+                       
+                    }
+               });
+
+               resu.save().then(()=>{
+                    res.send({success:"Success"})
+               }).catch(()=>{
+                    res.send({error:"Cannot connect to user right now"})
+               })
+
+            })
+
+         }).catch(()=>{
+             res.send({error:"Cannot connect to the community right now! pls try again"})
+         })
+
+     })
+
+ })
 
 
 server.listen(port, () => {
