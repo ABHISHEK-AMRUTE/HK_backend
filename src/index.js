@@ -356,6 +356,7 @@ app.post('/add_contact', (req, res) => {
         member_two: req.query.member_two,
         member_one_id: req.query.member_one_id,
         member_two_id: req.query.member_two_id,
+        
     }).exec(function (error, result) {
         if (error) {
             res.send({ error: "unable to connect to the server! try again." })
@@ -401,7 +402,7 @@ app.post('/add_contact', (req, res) => {
                             const user_one = result[0];
                             user_one.contacts.push({
                                 chat_id,
-                                userid:req.query.member_two_id,
+                                userid:req.query.member_two_username,
                                 name: req.query.member_two
                                
                             });
@@ -420,7 +421,7 @@ app.post('/add_contact', (req, res) => {
                             const user_one = result[0];
                             user_one.contacts.push({
                                 chat_id,
-                                userid:req.query.member_one_id,
+                                userid:req.query.member_one_username,
                                 name: req.query.member_one,
                               
                             });

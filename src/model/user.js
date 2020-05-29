@@ -45,7 +45,7 @@ const userschema = new mongoose.Schema({
             required:true
         },
         userid:{
-            type:mongoose.Schema.Types.ObjectId,
+            type:String,
             required:true
         }
     }],
@@ -100,4 +100,3 @@ module.exports= user
 //         "name":"don"
 //     }]
 // }
-
