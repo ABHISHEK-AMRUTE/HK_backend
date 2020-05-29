@@ -38,6 +38,7 @@ app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
     next();
 });
+
 app.use(bodyParser.urlencoded({ extended: false }))
 
 app.use(bodyParser.json())
@@ -59,10 +60,10 @@ io.on('connection', (socket) => {
     console.log('New WebSocket connection')
 
 
-    socket.on('join', (type, options, callback) => {
+    socket.on('join', (options, callback) => {
 
         const { error, user } = addUser({ id: socket.id, ...options })
-
+         const type = options.type
 
         if (error) {
             return callback(error)
@@ -110,7 +111,7 @@ io.on('connection', (socket) => {
     socket.on('sendMessage', (message, callback) => {
         const user = getUser(socket.id)
         const filter = new Filter()
-
+        
         if (filter.isProfane(message.text)) {
             return callback('Profanity is not allowed!')
         }
@@ -284,12 +285,12 @@ app.post('/registeruser/c', (req, res) => {
 ////getting user info 
 app.get('/my_info', (req, res) => {
     user.findOne({ userid: req.query.userid }).exec(function (err, docs) {
-          
 
-          if(err){
+
+        if (err) {
             res.send({ error: "no user found" })
-          }
-          res.send(docs)
+        }
+        res.send(docs)
     });
 })
 
@@ -350,60 +351,96 @@ app.get('/get_users', (req, res) => {
 // localhost:3000/add_contact?member_one=ABhishek amrute&member_two=ABhishek amrute&member_one_id=5ec20bb9230ff738facc7ce6&member_two_id=5ec20e93152c15449c0de67a
 app.post('/add_contact', (req, res) => {
 
-    //creating contact object
-    const obj = new contact({
+    contact.find({
         member_one: req.query.member_one,
         member_two: req.query.member_two,
         member_one_id: req.query.member_one_id,
         member_two_id: req.query.member_two_id,
-        message: {
-            name: "Note",
-            text: "Chat initiated",
-            timestamp: Date.now()
+    }).exec(function (error, result) {
+        if (error) {
+            res.send({ error: "unable to connect to the server! try again." })
         }
-    })
+        if (result.length == 0) {
+            contact.find({
+                member_one: req.query.member_two,
+                member_two: req.query.member_one,
+                member_one_id: req.query.member_two_id,
+                member_two_id: req.query.member_one_id,
+            }).exec(function (error, result) {
+                if (error) {
+                    res.send({ error: "unable to connect to the server! try again." })
+                }
+                if (result.length != 0) {
+                    res.send({ error: "The user is already in the contact list" })
+                }
+
+                //creating contact object
+                const obj = new contact({
+                    member_one: req.query.member_one,
+                    member_two: req.query.member_two,
+                    member_one_id: req.query.member_one_id,
+                    member_two_id: req.query.member_two_id,
+                    message: {
+                        name: "Note",
+                        text: "Chat initiated",
+                        timestamp: Date.now()
+                    }
+                })
 
 
-    //saving contact object to get its _id
-    obj.save().then(() => {
+                //saving contact object to get its _id
+                obj.save().then(() => {
 
-        const chat_id = obj._id
-        //adding chat contact in member one object   
-        user.find({ _id: req.query.member_one_id }).exec(function (err, result) {
-            if (result.length == 0) {
-                res.send({ error: "Some error occured in first step" })
-            }
-            else {
-                const user_one = result[0];
-                user_one.contacts.push({
-                    chat_id,
-                    name: req.query.member_two
-                });
-                user_one.save()
-            }
-
-
-        })
-
-        //adding chat contact in member two object   
-        user.find({ _id: req.query.member_two_id }).exec(function (err, result) {
-            if (result.length == 0) {
-                res.send({ error: "Some error occured in secnond step" })
-            }
-            else {
-                const user_one = result[0];
-                user_one.contacts.push({
-                    chat_id,
-                    name: req.query.member_one
-                });
-                user_one.save()
-            }
+                    const chat_id = obj._id
+                    //adding chat contact in member one object   
+                    user.find({ _id: req.query.member_one_id }).exec(function (err, result) {
+                        if (result.length == 0) {
+                            res.send({ error: "Some error occured in first step" })
+                        }
+                        else {
+                            const user_one = result[0];
+                            user_one.contacts.push({
+                                chat_id,
+                                userid:req.query.member_two_id,
+                                name: req.query.member_two
+                               
+                            });
+                            user_one.save()
+                        }
 
 
-        })
-        res.send({ success: "success! in adding user to contact" })
-    }).catch((err) => {
-        res.send({ error: err })
+                    })
+
+                    //adding chat contact in member two object   
+                    user.find({ _id: req.query.member_two_id }).exec(function (err, result) {
+                        if (result.length == 0) {
+                            res.send({ error: "Some error occured in secnond step" })
+                        }
+                        else {
+                            const user_one = result[0];
+                            user_one.contacts.push({
+                                chat_id,
+                                userid:req.query.member_one_id,
+                                name: req.query.member_one,
+                              
+                            });
+                            user_one.save()
+                        }
+
+
+                    })
+                    res.send({ success: "success! in adding user to contact" })
+                }).catch((err) => {
+                    res.send({ error: err })
+                })
+
+            })
+
+
+        }
+        else{
+           res.send({ error: "The user is already in the contact list" })
+        }
     })
 
 
@@ -494,9 +531,8 @@ app.post('/send_request', (req, res) => {
         result.save().then(() => {
 
             user.findOne({ _id: req.query.user_id }).exec((error, resul) => {
-                
-                if(error)
-                {
+
+                if (error) {
                     res.send("from in")
                 }
                 resul.request.push({
@@ -504,10 +540,10 @@ app.post('/send_request', (req, res) => {
                     name: req.query.community_name,
                     status: "pending"
                 })
-              
+
                 resul.save().then(() => {
                     res.send({ success: "Sucsess" })
-                }).catch(()=>{
+                }).catch(() => {
                     res.send("errd")
                 })
             })
@@ -517,7 +553,7 @@ app.post('/send_request', (req, res) => {
 
     })
 
-  
+
 
 })
 
@@ -528,61 +564,59 @@ app.post('/send_request', (req, res) => {
 ///   user_id
 ///   user_name
 ///   community_name
- app.post('/accept_request',(req,res)=>{
+app.post('/accept_request', (req, res) => {
 
-     community.findOne({_id:req.query.community_id}).exec((error,result)=>{
-        if(error){
-            res.send({error:"Unexpected error occured"})
+    community.findOne({ _id: req.query.community_id }).exec((error, result) => {
+        if (error) {
+            res.send({ error: "Unexpected error occured" })
         }
 
-         result.member.push({
-             chat_id:req.query.user_id,
-             name:req.query.user_name
-         })
-         
-         result.request.forEach(element => {
-              if(element.chat_id==req.query.user_id)
-              {   
-                  element.status = "accepted"
-                  
-              }
-         });
+        result.member.push({
+            chat_id: req.query.user_id,
+            name: req.query.user_name
+        })
 
-         result.save().then(()=>{
-            
-            user.findOne({_id:req.query.user_id}).exec((error,resu)=>{
-                if(error){
-                    res.send({error:"Unexpected error occured"})
+        result.request.forEach(element => {
+            if (element.chat_id == req.query.user_id) {
+                element.status = "accepted"
+
+            }
+        });
+
+        result.save().then(() => {
+
+            user.findOne({ _id: req.query.user_id }).exec((error, resu) => {
+                if (error) {
+                    res.send({ error: "Unexpected error occured" })
                 }
 
                 resu.community.push({
-                    chat_id:req.query.community_id,
-                    name : req.query.community_name
+                    chat_id: req.query.community_id,
+                    name: req.query.community_name
                 })
 
                 resu.request.forEach(element => {
-                    if(element.chat_id==req.query.community_id)
-                    {   
+                    if (element.chat_id == req.query.community_id) {
                         element.status = "accepted"
-                       
-                    }
-               });
 
-               resu.save().then(()=>{
-                    res.send({success:"Success"})
-               }).catch(()=>{
-                    res.send({error:"Cannot connect to user right now"})
-               })
+                    }
+                });
+
+                resu.save().then(() => {
+                    res.send({ success: "Success" })
+                }).catch(() => {
+                    res.send({ error: "Cannot connect to user right now" })
+                })
 
             })
 
-         }).catch(()=>{
-             res.send({error:"Cannot connect to the community right now! pls try again"})
-         })
+        }).catch(() => {
+            res.send({ error: "Cannot connect to the community right now! pls try again" })
+        })
 
-     })
+    })
 
- })
+})
 
 
 server.listen(port, () => {

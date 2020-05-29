@@ -43,6 +43,10 @@ const userschema = new mongoose.Schema({
         name:{
             type:String,
             required:true
+        },
+        userid:{
+            type:mongoose.Schema.Types.ObjectId,
+            required:true
         }
     }],
     community:[{
@@ -96,3 +100,4 @@ module.exports= user
 //         "name":"don"
 //     }]
 // }
+
