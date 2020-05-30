@@ -14,7 +14,7 @@ const chat_messages = require('./model/chat')
 
 
 ////////Final models//////////
-const user = require('./model/user')
+const users = require('./model/user')
 const contact = require('./model/contact')
 const community = require('./model/community')
 
@@ -65,7 +65,7 @@ io.on('connection', (socket) => {
        // callback
         ) => {
 
-        const { error, user_list} = addUser({ id: socket.id, username:options.username, room : options.room })
+        const { error, user} = addUser({ id: socket.id, username:options.username, room : options.room })
          const type = options.type
 
         // if (error) {
@@ -76,9 +76,9 @@ io.on('connection', (socket) => {
         /////loading chat//////
         if (type == "one-to-one") {
 
-            contact.findOne({ _id: user_list.room }).exec(function (err, result) {
+            contact.findOne({ _id: user.room }).exec(function (err, result) {
                 if (err) {
-                    io.to(user_list.room).emit({
+                    io.to(user.room).emit({
                         text: "Chats not found",
                         name: null_,
                         timestamp: Date.now()
@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
                 }
 
                 result.message.forEach(element => {
-                    io.to(user_list.room).emit({
+                    io.to(user.room).emit({
                         text: element.text,
                         name: element.name,
                         timestamp: element.timestamp
@@ -98,13 +98,13 @@ io.on('connection', (socket) => {
 
         }
 
-        socket.join(user_list.room)
+        socket.join(user.room)
 
         socket.emit('message', generateMessage('Admin', 'Welcome!'))
-        socket.broadcast.to(user_list.room).emit('message', generateMessage('Admin', `${user_list.username} has joined!`))
-        io.to(user_list.room).emit('roomData', {
-            room: user_list.room,
-            users: getUsersInRoom(user_list.room)
+        socket.broadcast.to(user.room).emit('message', generateMessage('Admin', `${user.username} has joined!`))
+        io.to(user.room).emit('roomData', {
+            room: user.room,
+            users: getUsersInRoom(user.room)
         })
 
         // callback()
@@ -114,7 +114,7 @@ io.on('connection', (socket) => {
     socket.on('sendMessage', (message
         //, callback
         ) => {
-        const user_list = getUser(socket.id)
+        const user = getUser(socket.id)
         // const filter = new Filter()
         
         // if (filter.isProfane(message.text)) {
@@ -122,9 +122,9 @@ io.on('connection', (socket) => {
         // }
         ///saving to database
 
-        contact.findOne({ _id: user_list.room }).exec(function (err, result) {
+        contact.findOne({ _id: user.room }).exec(function (err, result) {
             if (err) {
-                io.to(user_list.room).emit({
+                io.to(user.room).emit({
                     text: "Error in Storing! Check Internet Connection",
                     name: null_,
                     timestamp: Date.now()
@@ -133,7 +133,7 @@ io.on('connection', (socket) => {
 
             result.message.push(message)
             result.save().catch(() => {
-                io.to(user_list.room).emit({
+                io.to(user.room).emit({
                     text: "Error in Storing! Check Internet Connection",
                     name: null_,
                     timestamp: Date.now()
@@ -143,25 +143,25 @@ io.on('connection', (socket) => {
 
         })
 
-        io.to(user_list.room).emit(message)
+        io.to(user.room).emit(message)
         // callback()
     })
 
 
     socket.on('sendLocation', (coords, callback) => {
-        const user_list = getUser(socket.id)
-        io.to(user_list.room).emit('locationMessage', generateLocationMessage(user_list.username, `https://google.com/maps?q=${coords.latitude},${coords.longitude}`))
+        const user = getUser(socket.id)
+        io.to(user.room).emit('locationMessage', generateLocationMessage(user.username, `https://google.com/maps?q=${coords.latitude},${coords.longitude}`))
         callback()
     })
 
     socket.on('disconnect', () => {
-        const user_list = removeUser(socket.id)
+        const user = removeUser(socket.id)
 
-        if (user_list) {
-            io.to(user_list.room).emit('message', generateMessage('Admin', `${user_list.username} has left!`))
-            io.to(user_list.room).emit('roomData', {
-                room: user_list.room,
-                users: getUsersInRoom(user_list.room)
+        if (user) {
+            io.to(user.room).emit('message', generateMessage('Admin', `${user.username} has left!`))
+            io.to(user.room).emit('roomData', {
+                room: user.room,
+                users: getUsersInRoom(user.room)
             })
         }
     })
@@ -217,12 +217,12 @@ app.post('/avatar', upload.single('avatar'), (req, res) => {
 
 app.post('/registeruser', upload.single('avatar'), (req, res) => {
 
-    user.find({ userid: req.body.userid }).exec(function (err, docs) {
+    users.find({ userid: req.body.userid }).exec(function (err, docs) {
         if (docs.length != 0) {
             res.send({ error: "User id already taken! try something unique." })
         }
         else {
-            const obj = new user(req.body)
+            const obj = new users(req.body)
             obj.avatar = req.file.buffer;
             obj.contacts = []
             obj.community = []
@@ -243,7 +243,7 @@ app.post('/registeruser', upload.single('avatar'), (req, res) => {
                     comm.save().then((object) => {
                         const new_obj = {
                             community: object,
-                            user: obj
+                            users: obj
                         }
                         obj.community.push({
                             chat_id: object._id,
@@ -270,7 +270,7 @@ app.post('/registeruser', upload.single('avatar'), (req, res) => {
 
 
 app.post('/registeruser/c', (req, res) => {
-    user.find({ userid: req.query.userid }).exec(function (err, docs) {
+    users.find({ userid: req.query.userid }).exec(function (err, docs) {
 
         const obj = docs[0];
         obj.contacts.push({ chat_id: "asdasfsdfd54", name: "abhishek" })
@@ -289,7 +289,7 @@ app.post('/registeruser/c', (req, res) => {
 
 ////getting user info 
 app.get('/my_info', (req, res) => {
-    user.findOne({ userid: req.query.userid }).exec(function (err, docs) {
+    users.findOne({ userid: req.query.userid }).exec(function (err, docs) {
 
 
         if (err) {
@@ -307,7 +307,7 @@ app.get('/edit_my_info', (req, res) => {
 
 //////GET request to find contact list of user by his userid (user handel)///////
 app.get('./get_contact', (req, res) => {
-    user.find({ userid: req.query.userid }).exec(function (err, docs) {
+    users.find({ userid: req.query.userid }).exec(function (err, docs) {
         if (err) {
             res.send({ error: 'unable to find user' })
         }
@@ -320,7 +320,7 @@ app.get('./get_contact', (req, res) => {
 
 //////GET request to find community list of user by his userid (user handel)///////
 app.get('/get_contact', (req, res) => {
-    user.find({ userid: req.query.userid }).exec(function (err, docs) {
+    users.find({ userid: req.query.userid }).exec(function (err, docs) {
         if (err) {
             res.send({ error: 'unable to find user' })
         }
@@ -332,7 +332,7 @@ app.get('/get_contact', (req, res) => {
 
 
 app.get('/get_users', (req, res) => {
-    user.find(req.body).exec(function (err, docs) {
+    users.find(req.body).exec(function (err, docs) {
         if (err) {
             res.send({ error: 'unable to find user' })
         }
@@ -399,7 +399,7 @@ app.post('/add_contact', (req, res) => {
 
                     const chat_id = obj._id
                     //adding chat contact in member one object   
-                    user.find({ _id: req.query.member_one_id }).exec(function (err, result) {
+                    users.find({ _id: req.query.member_one_id }).exec(function (err, result) {
                         if (result.length == 0) {
                             res.send({ error: "Some error occured in first step" })
                         }
@@ -418,7 +418,7 @@ app.post('/add_contact', (req, res) => {
                     })
 
                     //adding chat contact in member two object   
-                    user.find({ _id: req.query.member_two_id }).exec(function (err, result) {
+                    users.find({ _id: req.query.member_two_id }).exec(function (err, result) {
                         if (result.length == 0) {
                             res.send({ error: "Some error occured in secnond step" })
                         }
@@ -536,7 +536,7 @@ app.post('/send_request', (req, res) => {
         })
         result.save().then(() => {
 
-            user.findOne({ _id: req.query.user_id }).exec((error, resul) => {
+            users.findOne({ _id: req.query.user_id }).exec((error, resul) => {
 
                 if (error) {
                     res.send("from in")
@@ -591,7 +591,7 @@ app.post('/accept_request', (req, res) => {
 
         result.save().then(() => {
 
-            user.findOne({ _id: req.query.user_id }).exec((error, resu) => {
+            users.findOne({ _id: req.query.user_id }).exec((error, resu) => {
                 if (error) {
                     res.send({ error: "Unexpected error occured" })
                 }
