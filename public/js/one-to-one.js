@@ -32,15 +32,23 @@ socket.on('message',(message)=>{
         // name : username,
         // timestamp : Date.now()
     // }
-
-    
-
-
-
+   console.log(message)
+   
 })
 
 
+document.getElementById("button").addEventListener('click',function(){
 
+
+    const message = {
+        text : document.getElementById("input").value,
+        name : username,
+        timestamp : Date.now()
+    }
+   console.log(message)
+
+   socket.emit('sendMessage', message)
+})
 
 
 /////call this function on clicking send message button, pass text message as an argument to this function
@@ -49,22 +57,13 @@ function send_message(text_message)
 
 
      const message = {
-         text : text_message,
+         text : document.getElementById("input").value,
          name : username,
          timestamp : Date.now()
      }
+    console.log(message)
 
-
-    socket.emit('sendMessage', message, (error) => {
-       
-
-        if (error) {
-            //// If you want to do something specific in angular for errors, then handel the errors here.
-            return console.log(error)
-        }
-
-        console.log('Message delivered!')
-    })
+    socket.emit('sendMessage', message)
 }
 
 
@@ -76,7 +75,7 @@ function send_message(text_message)
 
 
 ///this function must not be changed, it connects front-end to backend various socket rooms(currently for one-to-one chats)
-socket.emit('join', "one-to-one", { username, room }, (error) => {
+socket.emit('join',  {type:"one-to-one",username, room}, (error) => {
     if (error) {
         alert(error)
         location.href = '/'

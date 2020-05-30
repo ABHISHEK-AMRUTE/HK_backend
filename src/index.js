@@ -60,14 +60,17 @@ io.on('connection', (socket) => {
     console.log('New WebSocket connection')
 
 
-    socket.on('join', (options, callback) => {
+    socket.on('join', (options
+        //, 
+       // callback
+        ) => {
 
         const { error, user_list} = addUser({ id: socket.id, username:options.username, room : options.room })
          const type = options.type
 
-        if (error) {
-            return callback(error)
-        }
+        // if (error) {
+        //     return callback(error)
+        // }
 
 
         /////loading chat//////
@@ -104,17 +107,19 @@ io.on('connection', (socket) => {
             users: getUsersInRoom(user_list.room)
         })
 
-        callback()
+        // callback()
     })
 
 
-    socket.on('sendMessage', (message, callback) => {
+    socket.on('sendMessage', (message
+        //, callback
+        ) => {
         const user_list = getUser(socket.id)
-        const filter = new Filter()
+        // const filter = new Filter()
         
-        if (filter.isProfane(message.text)) {
-            return callback('Profanity is not allowed!')
-        }
+        // if (filter.isProfane(message.text)) {
+        //     return callback('Profanity is not allowed!')
+        // }
         ///saving to database
 
         contact.findOne({ _id: user_list.room }).exec(function (err, result) {
@@ -139,7 +144,7 @@ io.on('connection', (socket) => {
         })
 
         io.to(user_list.room).emit(message)
-        callback()
+        // callback()
     })
 
 
