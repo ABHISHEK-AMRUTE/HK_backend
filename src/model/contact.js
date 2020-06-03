@@ -32,7 +32,7 @@ const userschema = new mongoose.Schema({
               trim:true
           },
           contentType:{
-             type:mongoose.Schema.Types.contentType,
+             type:String,
              trim:true
           }, 
           text:{
