@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
-
-mongoose.connect('mongodb+srv://Abhishek:abhishekamruteonline@cluster0-b9n3j.mongodb.net/test?retryWrites=true&w=majority',{
+const url = 'mongodb+srv://Abhishek:abhishekamruteonline@cluster0-b9n3j.mongodb.net/test?retryWrites=true&w=majority'
+const conn = mongoose.createConnection(url,{
     useCreateIndex:true,
     useNewUrlParser:true,
     useUnifiedTopology: true 
