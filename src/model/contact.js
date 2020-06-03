@@ -27,6 +27,14 @@ const userschema = new mongoose.Schema({
               trim:true,
               required:true
           },
+          filename:{
+              type:String,
+              trim:true
+          },
+          contentType:{
+             type:mongoose.Schema.Types.contentType,
+             trim:true
+          }, 
           text:{
               type:String,
               trim:true,
