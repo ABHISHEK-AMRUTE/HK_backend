@@ -1,17 +1,58 @@
 const path = require('path')
 const multer = require('multer')
 const http = require('http')
+const crypto = require("crypto");
 const express = require('express')
 const socketio = require('socket.io')
 const Filter = require('bad-words')
 const bodyParser = require('body-parser')
 const { generateMessage, generateLocationMessage } = require('./utils/messages')
 const { addUser, removeUser, getUser, getUsersInRoom } = require('./utils/users')
+const GridFsStorage = require("multer-gridfs-storage");
 
-require('./db/mongo')
+const mongoose = require('mongoose')
+const url = 'mongodb+srv://Abhishek:abhishekamruteonline@cluster0-b9n3j.mongodb.net/test?retryWrites=true&w=majority'
+const conn = mongoose.createConnection(url,{
+    useCreateIndex:true,
+    useNewUrlParser:true,
+    useUnifiedTopology: true 
+})
+
 const chat_messages = require('./model/chat')
 
+////////////GRID FS part/////////////
+let gfs;
+conn.once("open", () => {
+  // init stream
+  gfs = new mongoose.mongo.GridFSBucket(conn.db, {
+    bucketName: "uploads"
+  });
+});
 
+const storage = new GridFsStorage({
+    url: url,
+    file: (req, file) => {
+      return new Promise((resolve, reject) => {
+        crypto.randomBytes(16, (err, buf) => {
+          if (err) {
+            return reject(err);
+          }
+          const filename = buf.toString("hex") + path.extname(file.originalname);
+          const fileInfo = {
+            filename: filename,
+            bucketName: "uploads"
+          };
+          resolve(fileInfo);
+        });
+      });
+    }
+  });
+
+const upload = multer({
+    storage
+  });
+
+  
 
 ////////Final models//////////
 const users = require('./model/user')
@@ -19,7 +60,7 @@ const contact = require('./model/contact')
 const community = require('./model/community')
 
 ///////////Multer middleware/////////
-const upload = multer({
+const upload_image = multer({
 
     limits: {
         fileSize: 5000000
@@ -55,124 +96,281 @@ app.use(express.static(publicDirectoryPath))
 
 
 
+// io.on('connection', (socket) => {
+
+//     console.log('New WebSocket connection')
+
+
+//     socket.on('join', (options
+//         //, 
+//        // callback
+//         ) => {
+
+//         const { error, user} = addUser({ id: socket.id, username:options.username, room : options.room })
+//          const type = options.type
+
+//         // if (error) {
+//         //     return callback(error)
+//         // }
+
+
+//         /////loading chat//////
+//         if (type == "one-to-one") {
+
+//             contact.findOne({ _id: user.room }).exec(function (err, result) {
+//                 if (err) {
+//                     io.to(user.room).emit({
+//                         text: "Chats not found",
+//                         name: null_,
+//                         timestamp: Date.now()
+//                     })
+//                 }
+
+//                 result.message.forEach(element => {
+//                     io.to(user.room).emit({
+//                         text: element.text,
+//                         name: element.name,
+//                         timestamp: element.timestamp
+//                     })
+//                 });
+
+//             })
+//         } else {
+
+//         }
+
+//         socket.join(user.room)
+
+//         socket.emit('message', generateMessage('Admin', 'Welcome!'))
+//         socket.broadcast.to(user.room).emit('message', generateMessage('Admin', `${user.username} has joined!`))
+//         io.to(user.room).emit('roomData', {
+//             room: user.room,
+//             users: getUsersInRoom(user.room)
+//         })
+
+//         // callback()
+//     })
+
+
+//     socket.on('sendMessage', (message
+//         //, callback
+//         ) => {
+//         const user = getUser(socket.id)
+//         // const filter = new Filter()
+        
+//         // if (filter.isProfane(message.text)) {
+//         //     return callback('Profanity is not allowed!')
+//         // }
+//         ///saving to database
+
+//         contact.findOne({ _id: user.room }).exec(function (err, result) {
+//             if (err) {
+//                 io.to(user.room).emit({
+//                     text: "Error in Storing! Check Internet Connection",
+//                     name: null_,
+//                     timestamp: Date.now()
+//                 })
+//             }
+
+//             result.message.push(message)
+//             result.save().catch(() => {
+//                 io.to(user.room).emit({
+//                     text: "Error in Storing! Check Internet Connection",
+//                     name: null_,
+//                     timestamp: Date.now()
+//                 })
+//             })
+
+
+//         })
+
+//         io.to(user.room).emit(message)
+//         // callback()
+//     })
+
+
+//     socket.on('sendLocation', (coords, callback) => {
+//         const user = getUser(socket.id)
+//         io.to(user.room).emit('locationMessage', generateLocationMessage(user.username, `https://google.com/maps?q=${coords.latitude},${coords.longitude}`))
+//         callback()
+//     })
+
+//     socket.on('disconnect', () => {
+//         const user = removeUser(socket.id)
+
+//         if (user) {
+//             io.to(user.room).emit('message', generateMessage('Admin', `${user.username} has left!`))
+//             io.to(user.room).emit('roomData', {
+//                 room: user.room,
+//                 users: getUsersInRoom(user.room)
+//             })
+//         }
+//     })
+// })
+
+
+
+////new connections
+
+
 io.on('connection', (socket) => {
 
     console.log('New WebSocket connection')
 
 
-    socket.on('join', (options
-        //, 
-       // callback
-        ) => {
+    socket.on('join', function(data){
 
-        const { error, user} = addUser({ id: socket.id, username:options.username, room : options.room })
-         const type = options.type
+        socket.join(data.room)
+        console.log("joined room " + data.room)
 
-        // if (error) {
-        //     return callback(error)
-        // }
+        if (data.type == "one-to-one") {
 
+                        contact.findOne({ _id: data.room }).exec(function (err, result) {
+                            if (err) {
+                                io.in(data.room).emit('new message',{
+                                    message: "Cannot load previous chats",
+                                    user: "Healthkrum Bot",
+                                    time: Date.now()
+                                })
+                            }
+            
+                            result.message.forEach(element => {
+                                io.in(data.room).emit('new message',{
+                                    message: element.text,
+                                    user: element.name,
+                                    time: element.timestamp
+                                })
+                            });
+            
+                        })
+                    }
 
-        /////loading chat//////
-        if (type == "one-to-one") {
-
-            contact.findOne({ _id: user.room }).exec(function (err, result) {
-                if (err) {
-                    io.to(user.room).emit({
-                        text: "Chats not found",
-                        name: null_,
-                        timestamp: Date.now()
-                    })
-                }
-
-                result.message.forEach(element => {
-                    io.to(user.room).emit({
-                        text: element.text,
-                        name: element.name,
-                        timestamp: element.timestamp
-                    })
-                });
-
-            })
-        } else {
-
-        }
-
-        socket.join(user.room)
-
-        socket.emit('message', generateMessage('Admin', 'Welcome!'))
-        socket.broadcast.to(user.room).emit('message', generateMessage('Admin', `${user.username} has joined!`))
-        io.to(user.room).emit('roomData', {
-            room: user.room,
-            users: getUsersInRoom(user.room)
-        })
-
-        // callback()
+        socket.broadcast.to(data.room).emit('new user joined', {user:data.username, message:data.username +'has joined this room.'});      
+    
     })
 
+   
 
-    socket.on('sendMessage', (message
-        //, callback
-        ) => {
-        const user = getUser(socket.id)
-        // const filter = new Filter()
+
+        socket.on('message',function(data){
+            console.log(data);
+
+            contact.findOne({ _id: data.room }).exec(function (err, result) {
+                            if (err) {
+                                io.in(data.room).emit('new message',{
+                                    message: "Error in Storing! Check Internet Connection",
+                                    user: "HealthKrum Bot",
+                                    time: Date.now()
+                                })
+                            }
+                
+                            result.message.push({
+                                text : data.message,
+                                timestamp : data.time,
+                                name : data.user
+                            })
+                            result.save().catch(() => {
+                                io.in(data.room).emit('new message',{
+                                    message: "Error in Storing! Check Internet Connection",
+                                    user: "HealthKrum Bot",
+                                    time: Date.now()
+                                })
+                            })
+                
+                
+                        })
+                
+            io.in(data.room).emit('new message', data);
         
-        // if (filter.isProfane(message.text)) {
-        //     return callback('Profanity is not allowed!')
-        // }
-        ///saving to database
-
-        contact.findOne({ _id: user.room }).exec(function (err, result) {
-            if (err) {
-                io.to(user.room).emit({
-                    text: "Error in Storing! Check Internet Connection",
-                    name: null_,
-                    timestamp: Date.now()
-                })
-            }
-
-            result.message.push(message)
-            result.save().catch(() => {
-                io.to(user.room).emit({
-                    text: "Error in Storing! Check Internet Connection",
-                    name: null_,
-                    timestamp: Date.now()
-                })
-            })
+          })
 
 
-        })
-
-        io.to(user.room).emit(message)
-        // callback()
-    })
-
-
-    socket.on('sendLocation', (coords, callback) => {
-        const user = getUser(socket.id)
-        io.to(user.room).emit('locationMessage', generateLocationMessage(user.username, `https://google.com/maps?q=${coords.latitude},${coords.longitude}`))
-        callback()
-    })
-
-    socket.on('disconnect', () => {
-        const user = removeUser(socket.id)
-
-        if (user) {
-            io.to(user.room).emit('message', generateMessage('Admin', `${user.username} has left!`))
-            io.to(user.room).emit('roomData', {
-                room: user.room,
-                users: getUsersInRoom(user.room)
-            })
-        }
-    })
+   
 })
 
 
 
 
 
-
 //////////////routes//////////////////
+//////////uploading files on the server
+
+
+app.post("/upload_file", upload.single("file"), (req, res) => {
+    res.send({name:req.file.filename,type:req.file.contentType})
+    
+  });
+
+////getting file from the server
+app.get("/download_file", (req, res) => {
+    // console.log('id', req.params.id)
+    const file = gfs
+      .find({
+        filename: req.body.filename
+      })
+      
+      .toArray((err, files) => {
+        if (!files || files.length === 0) {
+          return res.status(404).json({
+            err: "no files exist"
+          });
+        }
+        
+        // uploads_chunks.findOne({files_id:files._id}).exec(function(err,result){
+        //     if(err)
+        //     {
+        //         res.send({error:"file not found"})
+        //     }
+        //     res.send(result.data)
+        // })
+        // res.send(files)
+        res.set('content-type', req.body.contentType);
+         res.set('accept-ranges', 'bytes');
+        gfs.openDownloadStreamByName(req.body.filename).pipe(res);
+      });
+   
+   
+  });
+
+
+
+////////////upload files./////////////
+// app.post('/upload_files', (req, res) => {
+//     const storage = multer.memoryStorage()
+//     const upload = multer({ storage: storage, limits: { fields: 1, fileSize: 6000000, files: 1, parts: 2 }});
+//     upload.single('track')(req, res, (err) => {
+//       if (err) {
+//         return res.status(400).json({ message: "Upload Request Validation Failed" });
+//       } else if(!req.body.name) {
+//         return res.status(400).json({ message: "No track name in request body" });
+//       }
+      
+//       let trackName = req.body.name;
+      
+//       // Covert buffer to Readable Stream
+//       const readableTrackStream = new Readable();
+//       readableTrackStream.push(req.file.buffer);
+//       readableTrackStream.push(null);
+  
+//       let bucket = new mongodb.GridFSBucket(db, {
+//         bucketName: 'tracks'
+//       });
+  
+//       let uploadStream = bucket.openUploadStream(trackName);
+//       let id = uploadStream.id;
+//       readableTrackStream.pipe(uploadStream);
+  
+//       uploadStream.on('error', () => {
+//         return res.status(500).json({ message: "Error uploading file" });
+//       });
+  
+//       uploadStream.on('finish', () => {
+//         return res.status(201).json({ message: "File uploaded successfully, stored under Mongo ObjectID: " + id });
+//       });
+//     });
+//   });
+
+
 
 //////////one-to-one stuff////////////
 
@@ -207,7 +405,7 @@ app.post('/push_message', (req, res) => {
 
 /////avatar testing//////
 
-app.post('/avatar', upload.single('avatar'), (req, res) => {
+app.post('/avatar', upload_image.single('avatar'), (req, res) => {
     res.send()
 }, (error, req, res, next) => {
     res.send({ error: error.message })
@@ -215,7 +413,7 @@ app.post('/avatar', upload.single('avatar'), (req, res) => {
 
 /////////creating user/////////////
 
-app.post('/registeruser', upload.single('avatar'), (req, res) => {
+app.post('/registeruser', upload_image.single('avatar'), (req, res) => {
 
     users.find({ userid: req.body.userid }).exec(function (err, docs) {
         if (docs.length != 0) {
