@@ -35,14 +35,18 @@ const userschema = new mongoose.Schema({
         }
     }],
     message:[{
-        filename:{
+         filename:{
             type:String,
             trim:true
-        },
-        contentType:{
+          },
+          contentType:{
            type:String,
            trim:true
-        },
+          },
+          username:{
+            type:String,
+            required:true
+          },
           name:{
               type:String,
               trim:true,

@@ -269,7 +269,8 @@ io.on('connection', (socket) => {
                         const obj = {
                             message: element.text,
                             user: element.name,
-                            time: element.timestamp
+                            time: element.timestamp,
+                            username : element.username
                         }
                         if (element.filename) {
                         obj.filename = element.filename
@@ -339,7 +340,8 @@ io.on('connection', (socket) => {
                 const obj = {
                     text: data.message,
                     timestamp: data.time,
-                    name: data.user
+                    name: data.user,
+                    username : data.username
                 }
 
                 if (data.filename) {
