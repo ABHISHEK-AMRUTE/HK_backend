@@ -12,16 +12,16 @@ const GridFsStorage = require("multer-gridfs-storage");
 
 const mongoose = require('mongoose')
 const url = 'mongodb+srv://Abhishek:abhishekamruteonline@cluster0-b9n3j.mongodb.net/test?retryWrites=true&w=majority'
-mongoose.connect(url,{
-    useCreateIndex:true,
-    useNewUrlParser:true,
-    useUnifiedTopology: true 
+mongoose.connect(url, {
+    useCreateIndex: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true
 })
 
-const conn = mongoose.createConnection(url,{
-    useCreateIndex:true,
-    useNewUrlParser:true,
-    useUnifiedTopology: true 
+const conn = mongoose.createConnection(url, {
+    useCreateIndex: true,
+    useNewUrlParser: true,
+    useUnifiedTopology: true
 })
 
 // const chat_messages = require('./model/chat')
@@ -29,36 +29,36 @@ const conn = mongoose.createConnection(url,{
 ////////////GRID FS part/////////////
 let gfs;
 conn.once("open", () => {
-  // init stream
-  gfs = new mongoose.mongo.GridFSBucket(conn.db, {
-    bucketName: "uploads"
-  });
+    // init stream
+    gfs = new mongoose.mongo.GridFSBucket(conn.db, {
+        bucketName: "uploads"
+    });
 });
 
 const storage = new GridFsStorage({
     url: url,
     file: (req, file) => {
-      return new Promise((resolve, reject) => {
-        crypto.randomBytes(16, (err, buf) => {
-          if (err) {
-            return reject(err);
-          }
-          const filename = buf.toString("hex") + path.extname(file.originalname);
-          const fileInfo = {
-            filename: filename,
-            bucketName: "uploads"
-          };
-          resolve(fileInfo);
+        return new Promise((resolve, reject) => {
+            crypto.randomBytes(16, (err, buf) => {
+                if (err) {
+                    return reject(err);
+                }
+                const filename = buf.toString("hex") + path.extname(file.originalname);
+                const fileInfo = {
+                    filename: filename,
+                    bucketName: "uploads"
+                };
+                resolve(fileInfo);
+            });
         });
-      });
     }
-  });
+});
 
 const upload = multer({
     storage
-  });
+});
 
-  
+
 
 ////////Final models//////////
 const users = require('./model/user')
@@ -163,7 +163,7 @@ app.use(express.static(publicDirectoryPath))
 //         ) => {
 //         const user = getUser(socket.id)
 //         // const filter = new Filter()
-        
+
 //         // if (filter.isProfane(message.text)) {
 //         //     return callback('Profanity is not allowed!')
 //         // }
@@ -224,74 +224,151 @@ io.on('connection', (socket) => {
     console.log('New WebSocket connection')
 
 
-    socket.on('join', function(data){
+    socket.on('join', function (data) {
 
         socket.join(data.room)
         console.log("joined room " + data.room)
 
         if (data.type == "one-to-one") {
 
-                        contact.findOne({ _id: data.room }).exec(function (err, result) {
-                            if (err) {
-                                io.in(data.room).emit('new message',{
-                                    message: "Cannot load previous chats",
-                                    user: "Healthkrum Bot",
-                                    time: Date.now()
-                                })
-                            }
-            
-                            result.message.forEach(element => {
-                                io.in(data.room).emit('new message',{
-                                    message: element.text,
-                                    user: element.name,
-                                    time: element.timestamp
-                                })
-                            });
-            
-                        })
-                    }
+            contact.findOne({ _id: data.room }).exec(function (err, result) {
+                if (err) {
+                    io.in(data.room).emit('new message', {
+                        message: "Cannot load previous chats",
+                        user: "Healthkrum Bot",
+                        time: Date.now()
+                    })
+                }
+                else {
+                    result.message.forEach(element => {
+                        const obj = {
+                            message: element.text,
+                            user: element.name,
+                            time: element.timestamp
+                        }
+                        if (element.filename) {
+                        obj.filename = element.filename
+                            obj.contentType = element.contentType
+                        }
+                        io.in(data.room).emit('new message', obj)
+                    });
+                }
+            })
+        }else{
 
-        socket.broadcast.to(data.room).emit('new user joined', {user:data.username, message:data.username +'has joined this room.'});      
-    
+            community.findOne({ _id: data.room }).exec(function (err, result) {
+                if (err) {
+                    io.in(data.room).emit('new message', {
+                        message: "Cannot load previous chats",
+                        user: "Healthkrum Bot",
+                        time: Date.now()
+                    })
+                }
+                else {
+                    result.message.forEach(element => {
+                        const obj = {
+                            message: element.text,
+                            user: element.name,
+                            time: element.timestamp
+                        }
+                        if (element.filename) {
+                        obj.filename = element.filename
+                            obj.contentType = element.contentType
+                        }
+                        io.in(data.room).emit('new message', obj)
+                    });
+                }
+            })
+        }
+
+        socket.broadcast.to(data.room).emit('new user joined', { user: data.username, message: data.username + 'has joined this room.' });
+
     })
 
-   
 
 
-        socket.on('message',function(data){
-            console.log(data);
 
-            contact.findOne({ _id: data.room }).exec(function (err, result) {
-                            if (err) {
-                                io.in(data.room).emit('new message',{
-                                    message: "Error in Storing! Check Internet Connection",
-                                    user: "HealthKrum Bot",
-                                    time: Date.now()
-                                })
-                            }
-                
-                            result.message.push({
-                                text : data.message,
-                                timestamp : data.time,
-                                name : data.user
-                            })
-                            result.save().catch(() => {
-                                io.in(data.room).emit('new message',{
-                                    message: "Error in Storing! Check Internet Connection",
-                                    user: "HealthKrum Bot",
-                                    time: Date.now()
-                                })
-                            })
-                
-                
-                        })
-                
-            io.in(data.room).emit('new message', data);
-        
-          })
+    socket.on('message', function (data) {
+        console.log(data);
+
+       if(data.type == "one-to-one")
+       {
+        contact.findOne({ _id: data.room }).exec(function (err, result) {
+            if (err) {
+                io.in(data.room).emit('new message', {
+                    message: "Error in Storing! Check Internet Connection",
+                    user: "HealthKrum Bot",
+                    time: Date.now()
+                })
+            }
+            else {
+                const obj = {
+                    text: data.message,
+                    timestamp: data.time,
+                    name: data.user
+                }
+
+                if (data.filename) {
+                    obj.filename = data.filename
+                    obj.contentType = data.contentType
+                }
+
+                result.message.push(obj)
+                result.save().catch((err) => {
+                    console.log(err)
+                    io.in(data.room).emit('new message', {
+                        message: "Error in Storing! Check Internet Connection",
+                        user: "HealthKrum Bot",
+                        time: Date.now()
+                    })
+                })
+            }
+
+        })
+
+       }else{
+        community.findOne({ _id: data.room }).exec(function (err, result) {
+            if (err) {
+                io.in(data.room).emit('new message', {
+                    message: "Error in Storing! Check Internet Connection",
+                    user: "HealthKrum Bot",
+                    time: Date.now()
+                })
+            }
+            else {
+                const obj = {
+                    text: data.message,
+                    timestamp: data.time,
+                    name: data.user
+                }
+
+                if (data.filename) {
+                    obj.filename = data.filename
+                    obj.contentType = data.contentType
+                }
+
+                result.message.push(obj)
+                result.save().catch((err) => {
+                    console.log(err)
+                    io.in(data.room).emit('new message', {
+                        message: "Error in Storing! Check Internet Connection",
+                        user: "HealthKrum Bot",
+                        time: Date.now()
+                    })
+                })
+            }
+
+        })
+       }
 
 
-   
+
+        io.in(data.room).emit('new message', data);
+
+    })
+
+
+
 })
 
 
@@ -303,40 +380,40 @@ io.on('connection', (socket) => {
 
 
 app.post("/upload_file", upload.single("file"), (req, res) => {
-    res.send({name:req.file.filename,type:req.file.contentType})
-    
-  });
+    res.send({ name: req.file.filename, type: req.file.contentType })
+
+});
 
 ////getting file from the server
 app.get("/download_file", (req, res) => {
     // console.log('id', req.params.id)
     const file = gfs
-      .find({
-        filename: req.body.filename
-      })
-      
-      .toArray((err, files) => {
-        if (!files || files.length === 0) {
-          return res.status(404).json({
-            err: "no files exist"
-          });
-        }
-        
-        // uploads_chunks.findOne({files_id:files._id}).exec(function(err,result){
-        //     if(err)
-        //     {
-        //         res.send({error:"file not found"})
-        //     }
-        //     res.send(result.data)
-        // })
-        // res.send(files)
-        res.set('content-type', req.body.contentType);
-         res.set('accept-ranges', 'bytes');
-        gfs.openDownloadStreamByName(req.body.filename).pipe(res);
-      });
-   
-   
-  });
+        .find({
+            filename: req.body.filename
+        })
+
+        .toArray((err, files) => {
+            if (!files || files.length === 0) {
+                return res.status(404).json({
+                    err: "no files exist"
+                });
+            }
+
+            // uploads_chunks.findOne({files_id:files._id}).exec(function(err,result){
+            //     if(err)
+            //     {
+            //         res.send({error:"file not found"})
+            //     }
+            //     res.send(result.data)
+            // })
+            // res.send(files)
+            res.set('content-type', req.body.contentType);
+            res.set('accept-ranges', 'bytes');
+            gfs.openDownloadStreamByName(req.body.filename).pipe(res);
+        });
+
+
+});
 
 
 //////////one-to-one stuff////////////
@@ -526,7 +603,7 @@ app.post('/add_contact', (req, res) => {
         member_two: req.query.member_two,
         member_one_id: req.query.member_one_id,
         member_two_id: req.query.member_two_id,
-        
+
     }).exec(function (error, result) {
         if (error) {
             res.send({ error: "unable to connect to the server! try again." })
@@ -572,9 +649,9 @@ app.post('/add_contact', (req, res) => {
                             const user_one = result[0];
                             user_one.contacts.push({
                                 chat_id,
-                                userid:req.query.member_two_username,
+                                userid: req.query.member_two_username,
                                 name: req.query.member_two
-                               
+
                             });
                             user_one.save()
                         }
@@ -591,9 +668,9 @@ app.post('/add_contact', (req, res) => {
                             const user_one = result[0];
                             user_one.contacts.push({
                                 chat_id,
-                                userid:req.query.member_one_username,
+                                userid: req.query.member_one_username,
                                 name: req.query.member_one,
-                              
+
                             });
                             user_one.save()
                         }
@@ -609,8 +686,8 @@ app.post('/add_contact', (req, res) => {
 
 
         }
-        else{
-           res.send({ error: "The user is already in the contact list" })
+        else {
+            res.send({ error: "The user is already in the contact list" })
         }
     })
 
