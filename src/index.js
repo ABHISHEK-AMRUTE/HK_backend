@@ -276,7 +276,7 @@ io.on('connection', (socket) => {
                         obj.filename = element.filename
                             obj.contentType = element.contentType
                         }
-                        io.in(data.room).emit('new message', obj)
+                        socket.emit(data.room).emit('new message', obj)
                     });
                 }
             })
@@ -866,6 +866,26 @@ app.post('/accept_request', (req, res) => {
 
     })
 
+})
+
+app.get('/get_community',(req,res)=>{
+    community.findOne({_id:req.query.chat_id}).exec(function (err,result){
+       if(err)
+       {
+           res.send({error:"cannot find data"})
+       }
+       res.send({name:result.name})
+    })
+})
+
+app.get('/get_community_list',(req,res)=>{
+    community.find().exec(function (err,result){
+       if(err)
+       {
+           res.send({error:"cannot find data"})
+       }
+       res.send(result)
+    })
 })
 
 
