@@ -1,5 +1,16 @@
 const mongoose = require('mongoose')
 
+
+
+// name
+// owner 
+// group_icon
+// description
+// request
+// member
+// message
+
+
 const userschema = new mongoose.Schema({
     name:{
         type:String,
@@ -8,6 +19,12 @@ const userschema = new mongoose.Schema({
     owner:{
         type:mongoose.Schema.Types.ObjectId,
         required:true
+    },
+    group_icon:{
+        type:Buffer
+    },
+    description : {
+        type:String
     },
     request:[{
     chat_id:{
@@ -25,7 +42,7 @@ const userschema = new mongoose.Schema({
     }
     }],
     member:[{
-        chat_id:{
+        user_id:{
             type:mongoose.Schema.Types.ObjectId,
             required:true
         },

@@ -24,6 +24,9 @@ const conn = mongoose.createConnection(url, {
     useUnifiedTopology: true
 })
 
+const one_routes = require('./routes/ont-to-one_routes')
+const community_routes = require('./routes/community_routes')
+
 // const chat_messages = require('./model/chat')
 
 ////////////GRID FS part/////////////
@@ -97,8 +100,8 @@ const publicDirectoryPath = path.join(__dirname, '../public')
 
 app.use(express.static(publicDirectoryPath))
 
-
-
+// app.use(one_routes)
+app.use(community_routes)
 
 
 
@@ -420,42 +423,42 @@ app.get("/download_file", (req, res) => {
 
 //////////one-to-one stuff////////////
 
-app.post('/load_chat', (req, res) => {
-    contact.findOne({ _id: req.query._id }).exec(function (err, result) {
-        if (err) {
-            res.send({ error: "not record of chats found" })
-        }
-        res.send(result)
-    })
-})
+// app.post('/load_chat', (req, res) => {
+//     contact.findOne({ _id: req.query._id }).exec(function (err, result) {
+//         if (err) {
+//             res.send({ error: "not record of chats found" })
+//         }
+//         res.send(result)
+//     })
+// })
 
-app.post('/push_message', (req, res) => {
-    contact.findOne({ _id: req.query._id }).exec(function (err, result) {
-        if (err) {
-            res.send({ error: "not record of chats found" })
-        }
-        result.message.push({
-            name: req.query.name,
-            text: req.query.text,
-            timestamp: req.query.timestamp
-        })
-        result.save().then(() => {
-            res.send(result)
-        }).catch(() => {
-            res.send({ error: "Error in saving chat! try again" })
-        })
-    })
-})
+// app.post('/push_message', (req, res) => {
+//     contact.findOne({ _id: req.query._id }).exec(function (err, result) {
+//         if (err) {
+//             res.send({ error: "not record of chats found" })
+//         }
+//         result.message.push({
+//             name: req.query.name,
+//             text: req.query.text,
+//             timestamp: req.query.timestamp
+//         })
+//         result.save().then(() => {
+//             res.send(result)
+//         }).catch(() => {
+//             res.send({ error: "Error in saving chat! try again" })
+//         })
+//     })
+// })
 
 /////////////////////////////////////
 
 /////avatar testing//////
 
-app.post('/avatar', upload_image.single('avatar'), (req, res) => {
-    res.send()
-}, (error, req, res, next) => {
-    res.send({ error: error.message })
-})
+// app.post('/avatar', upload_image.single('avatar'), (req, res) => {
+//     res.send()
+// }, (error, req, res, next) => {
+//     res.send({ error: error.message })
+// })
 
 /////////creating user/////////////
 
@@ -513,21 +516,21 @@ app.post('/registeruser', upload_image.single('avatar'), (req, res) => {
 })
 
 
-app.post('/registeruser/c', (req, res) => {
-    users.find({ userid: req.query.userid }).exec(function (err, docs) {
+// app.post('/registeruser/c', (req, res) => {
+//     users.find({ userid: req.query.userid }).exec(function (err, docs) {
 
-        const obj = docs[0];
-        obj.contacts.push({ chat_id: "asdasfsdfd54", name: "abhishek" })
+//         const obj = docs[0];
+//         obj.contacts.push({ chat_id: "asdasfsdfd54", name: "abhishek" })
 
-        obj.save().then(() => {
-            res.send(obj)
-        }).catch((e) => {
-            res.send({ error: e })
-        })
+//         obj.save().then(() => {
+//             res.send(obj)
+//         }).catch((e) => {
+//             res.send({ error: e })
+//         })
 
-    });
+//     });
 
-})
+// })
 
 
 
@@ -706,27 +709,27 @@ app.post('/add_contact', (req, res) => {
 // text:req.query.text,
 // timestamp:req.query.timestamp
 
-app.post('/save_contacts_chat', (req, res) => {
-    contact.find({ _id: req.query._id }).exec(function (err, result) {
-        if (result.length == 0) {
-            res.send({ error: "contact not found" })
-        } else {
-            const obj = result[0]
-            obj.message.push({
-                name: req.query.name,
-                text: req.query.text,
-                timestamp: req.query.timestamp
-            })
+// app.post('/save_contacts_chat', (req, res) => {
+//     contact.find({ _id: req.query._id }).exec(function (err, result) {
+//         if (result.length == 0) {
+//             res.send({ error: "contact not found" })
+//         } else {
+//             const obj = result[0]
+//             obj.message.push({
+//                 name: req.query.name,
+//                 text: req.query.text,
+//                 timestamp: req.query.timestamp
+//             })
 
-            obj.save().then(() => {
-                res.send({ success: "sent" })
-            }).catch(() => {
-                res.send({ error: "error while storing chat" })
-            })
-        }
+//             obj.save().then(() => {
+//                 res.send({ success: "sent" })
+//             }).catch(() => {
+//                 res.send({ error: "error while storing chat" })
+//             })
+//         }
 
-    })
-})
+//     })
+// })
 
 
 ///saving community chat messages
@@ -736,157 +739,36 @@ app.post('/save_contacts_chat', (req, res) => {
 // text:req.query.text,
 // timestamp:req.query.timestamp
 
-app.post('/save_community_chat', (req, res) => {
-    community.find({ _id: req.query._id }).exec(function (err, result) {
-        if (result.length == 0) {
-            res.send({ error: "contact not found" })
-        } else {
-            const obj = result[0]
-            obj.message.push({
-                name: req.query.name,
-                text: req.query.text,
-                timestamp: req.query.timestamp
-            })
+// app.post('/save_community_chat', (req, res) => {
+//     community.find({ _id: req.query._id }).exec(function (err, result) {
+//         if (result.length == 0) {
+//             res.send({ error: "contact not found" })
+//         } else {
+//             const obj = result[0]
+//             obj.message.push({
+//                 name: req.query.name,
+//                 text: req.query.text,
+//                 timestamp: req.query.timestamp
+//             })
 
-            obj.save().then(() => {
-                res.send({ success: "sent" })
-            }).catch(() => {
-                res.send({ error: "error while storing chat" })
-            })
-        }
+//             obj.save().then(() => {
+//                 res.send({ success: "sent" })
+//             }).catch(() => {
+//                 res.send({ error: "error while storing chat" })
+//             })
+//         }
 
-    })
-})
+//     })
+// })
 
 
 
 /////////////send community request///////////
-////parameters 
+///   parameters 
 ///   community_id 
 ///   user_id
 ///   user_name
 ///   community_name
-
-app.post('/send_request', (req, res) => {
-
-
-    ////sending request to 
-    community.findOne({ _id: req.query.community_id }).exec((error, result) => {
-
-        result.request.push({
-            chat_id: req.query.user_id,
-            name: req.query.user_name,
-            status: "pending"
-        })
-        result.save().then(() => {
-
-            users.findOne({ _id: req.query.user_id }).exec((error, resul) => {
-
-                if (error) {
-                    res.send("from in")
-                }
-                resul.request.push({
-                    chat_id: req.query.community_id,
-                    name: req.query.community_name,
-                    status: "pending"
-                })
-
-                resul.save().then(() => {
-                    res.send({ success: "Sucsess" })
-                }).catch(() => {
-                    res.send("errd")
-                })
-            })
-
-
-        })
-
-    })
-
-
-
-})
-
-
-////////accepting request//////
-// API Parameters
-///   community_id 
-///   user_id
-///   user_name
-///   community_name
-app.post('/accept_request', (req, res) => {
-
-    community.findOne({ _id: req.query.community_id }).exec((error, result) => {
-        if (error) {
-            res.send({ error: "Unexpected error occured" })
-        }
-
-        result.member.push({
-            chat_id: req.query.user_id,
-            name: req.query.user_name
-        })
-
-        result.request.forEach(element => {
-            if (element.chat_id == req.query.user_id) {
-                element.status = "accepted"
-
-            }
-        });
-
-        result.save().then(() => {
-
-            users.findOne({ _id: req.query.user_id }).exec((error, resu) => {
-                if (error) {
-                    res.send({ error: "Unexpected error occured" })
-                }
-
-                resu.community.push({
-                    chat_id: req.query.community_id,
-                    name: req.query.community_name
-                })
-
-                resu.request.forEach(element => {
-                    if (element.chat_id == req.query.community_id) {
-                        element.status = "accepted"
-
-                    }
-                });
-
-                resu.save().then(() => {
-                    res.send({ success: "Success" })
-                }).catch(() => {
-                    res.send({ error: "Cannot connect to user right now" })
-                })
-
-            })
-
-        }).catch(() => {
-            res.send({ error: "Cannot connect to the community right now! pls try again" })
-        })
-
-    })
-
-})
-
-app.get('/get_community',(req,res)=>{
-    community.findOne({_id:req.query.chat_id}).exec(function (err,result){
-       if(err)
-       {
-           res.send({error:"cannot find data"})
-       }
-       res.send({name:result.name})
-    })
-})
-
-app.get('/get_community_list',(req,res)=>{
-    community.find().exec(function (err,result){
-       if(err)
-       {
-           res.send({error:"cannot find data"})
-       }
-       res.send(result)
-    })
-})
 
 
 server.listen(port, () => {
