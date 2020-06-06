@@ -27,23 +27,35 @@ const app = new express.Router()
 // user_id : _id of user to be added,
 //  username : name of prso nto be added
 //  name : name of the community
-app.post("/add_to_community",(req,res)=>{
-    community.findOne({_id:req.query.community_id}).exec((err,result)=>{
-           result.member.push({
-               user_id : req.query.user_id,
-               name  :   req.query.username
-           })
-           result.save()
-           users.findOne({_id:req.query.user_id}).exec((err,result_user)=>{
-               result_user.community.push({
-                   chat_id : req.query.community_id,
-                   name : req.query.name
-               })
-               result_user.save().then((final)=>{
-                   res.send(final)
-               })
-           }) 
+
+app.post("/add_to_community", (req, res) => {
+    let _id
+    users.findOne({ userid: req.query.user_id }).exec((err, result_user) => {
+
+        _id = result_user._id
+        console.log(_id)
+
+        community.findOne({ _id: req.query.community_id }).exec((err, result) => {
+            result.member.push({
+                user_id: _id,
+                name: req.query.username
+            })
+            result.save()
+
+            result_user.community.push({
+                chat_id: req.query.community_id,
+                name: req.query.name
+            })
+            result_user.save().then((final) => {
+                res.send(final)
+            })
+
+        })
+
     })
+
+
+
 })
 
 
@@ -59,26 +71,25 @@ app.post("/add_to_community",(req,res)=>{
 // }
 
 
-app.post("/create_community",upload_image.single('avatar'),(req,res)=>{
-  
+app.post("/create_community", upload_image.single('avatar'), (req, res) => {
+
     const create_obj = new community(req.body)
-    if(req.file)
-    {
+    if (req.file) {
         create_obj.group_icon = req.file.buffer
     }
     create_obj.request = []
     create_obj.member = [{
-     user_id :  req.query.user_id,
-     name : req.query.username  
+        user_id: req.query.user_id,
+        name: req.query.username
     }]
     create_obj.message = []
-    create_obj.save().then((result)=>{
-        
-       
-        users.findOne({_id:req.query.user_id}).exec((err,resu)=>{
+    create_obj.save().then((result) => {
+
+
+        users.findOne({ _id: req.query.user_id }).exec((err, resu) => {
             resu.community.push({
-                chat_id : result._id,
-                name : result.name
+                chat_id: result._id,
+                name: result.name
             })
             resu.save()
             res.send({
@@ -87,7 +98,7 @@ app.post("/create_community",upload_image.single('avatar'),(req,res)=>{
             })
         })
     })
-    
+
 
 })
 
@@ -193,23 +204,22 @@ app.post('/accept_request', (req, res) => {
 
 })
 
-app.get('/get_community',(req,res)=>{
-    community.findOne({_id:req.query.chat_id}).exec(function (err,result){
-       if(err)
-       {
-           res.send({error:"cannot find data"})
-       }
-       res.send({name:result.name})
+app.get('/get_community', (req, res) => {
+    community.findOne({ _id: req.query.chat_id }).exec(function (err, result) {
+        if (err) {
+            res.send({ error: "cannot find data" })
+        }
+        res.send({ name: result.name ,
+        result})
     })
 })
 
-app.get('/get_community_list',(req,res)=>{
-    community.find().exec(function (err,result){
-       if(err)
-       {
-           res.send({error:"cannot find data"})
-       }
-       res.send(result)
+app.get('/get_community_list', (req, res) => {
+    community.find().exec(function (err, result) {
+        if (err) {
+            res.send({ error: "cannot find data" })
+        }
+        res.send(result)
     })
 })
 
