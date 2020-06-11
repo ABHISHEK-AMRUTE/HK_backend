@@ -23,8 +23,9 @@ const app = new express.Router()
 //// adding user to the community 
 
 ////query parameters 
-// community_id : chat_id of community,
-// user_id : _id of user to be added,
+//  Url   post api  /add_to_community
+//  community_id : chat_id of community,
+//  user_id : _id of user to be added (like naman@123, ye _id wali id nahi hai),
 //  username : name of prso nto be added
 //  name : name of the community
 
@@ -61,11 +62,15 @@ app.post("/add_to_community", (req, res) => {
 
 
 // request parameter
-// user_id : owner or group creator _id
-// username : ownername
-// user_id : owner_id
+// POST url == localhost:/create_community
+// user_id : owner or group creator _id (ye number wali _id hai )
+// username : ownername( name of user creating the cmmunity)
+
+
+
+//     aur ye request body, jise Stringify karke bhejte hai
 // {
-//     name : 'commmunity name',
+//     name : 'commmunity name from model',
 //     owner : "_id",
 //     description : "about the group"
 // }
