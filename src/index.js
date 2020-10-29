@@ -1,6 +1,7 @@
 const path = require('path')
 const multer = require('multer')
 const http = require('http')
+const { ExpressPeerServer } = require('peer');
 const crypto = require("crypto");
 const express = require('express')
 const socketio = require('socket.io')
@@ -96,7 +97,12 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 const server = http.createServer(app)
 const io = socketio(server)
-
+const peerServer = ExpressPeerServer(server, {
+    debug: true,
+    path: '/myapp'
+  });
+  
+app.use('/peerjs', peerServer);
 const port = process.env.PORT || 3000
 const publicDirectoryPath = path.join(__dirname, '../public')
 
@@ -104,6 +110,14 @@ app.use(express.static(publicDirectoryPath))
 
 // app.use(one_routes)
 app.use(community_routes)
+
+
+
+
+////peerserver 
+
+peerServer.on('connection', (client) => {console.log("user joined peerserver")});
+peerServer.on('disconnect', (client) => { console.log("user disconnected from peerserver") });
 
 
 
@@ -238,7 +252,7 @@ io.on('connection', (socket) => {
 
             contact.findOne({ _id: data.room }).exec(function (err, result) {
                 if (err) {
-                    io.in(data.room).emit('new message', {
+                    socket.emit(data.room).emit('new message', {
                         message: "Cannot load previous chats",
                         user: "Healthkrum Bot",
                         time: Date.now()
@@ -255,7 +269,7 @@ io.on('connection', (socket) => {
                         obj.filename = element.filename
                             obj.contentType = element.contentType
                         }
-                        io.in(data.room).emit('new message', obj)
+                        socket.emit(data.room).emit('new message', obj)
                     });
                 }
             })
@@ -263,13 +277,24 @@ io.on('connection', (socket) => {
 
             community.findOne({ _id: data.room }).exec(function (err, result) {
                 if (err) {
-                    io.in(data.room).emit('new message', {
+                    socket.emit(data.room).emit('new message', {
                         message: "Cannot load previous chats",
                         user: "Healthkrum Bot",
                         time: Date.now()
                     })
                 }
                 else {
+                  
+                    users.findOne({_id:result.owner}).exec(function(err,i_found_admin){
+                          if(err)
+                          {
+                           socket.emit(data.room).emit('admin_id',{error:"Not found"})
+                          }
+                          else{
+                           socket.emit(data.room).emit('admin_id',{admin_id:i_found_admin.userid})
+                          }
+                    })
+
                     result.message.forEach(element => {
                         const obj = {
                             message: element.text,
@@ -278,7 +303,7 @@ io.on('connection', (socket) => {
                             username : element.username
                         }
                         if (element.filename) {
-                        obj.filename = element.filename
+                            obj.filename = element.filename
                             obj.contentType = element.contentType
                         }
                         socket.emit(data.room).emit('new message', obj)
@@ -290,6 +315,10 @@ io.on('connection', (socket) => {
         socket.broadcast.to(data.room).emit('new user joined', { user: data.username, message: data.username + 'has joined this room.' });
 
     })
+
+socket.on('typing',function(data){
+    io.in(data.room).emit('typing',data)
+})
 
 
 

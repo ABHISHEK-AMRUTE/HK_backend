@@ -30,6 +30,7 @@ const app = new express.Router()
 //  name : name of the community
 
 app.post("/add_to_community", (req, res) => {
+    console.log("adding user to communtiy")
     let _id
     users.findOne({ userid: req.query.user_id }).exec((err, result_user) => {
 
@@ -41,7 +42,9 @@ app.post("/add_to_community", (req, res) => {
                 user_id: _id,
                 name: req.query.username
             })
-            result.save()
+            result.save().catch((err)=>{
+                   res.send(err)
+            })
 
             result_user.community.push({
                 chat_id: req.query.community_id,
@@ -77,7 +80,7 @@ app.post("/add_to_community", (req, res) => {
 
 
 app.post("/create_community", upload_image.single('avatar'), (req, res) => {
-
+console.log("creating community\nthik hai")
     const create_obj = new community(req.body)
     if (req.file) {
         create_obj.group_icon = req.file.buffer
